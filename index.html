@@ -206,12 +206,15 @@
   }
 
   function callGASRead(payload) {
-    // GAS Web App perlu di-deploy dengan akses "Anyone"
-    // Gunakan GET request dengan parameter untuk menghindari CORS preflight
+    // GET request ke GAS — tidak ada CORS preflight, langsung dibaca
     const params = new URLSearchParams({ data: JSON.stringify(payload) });
-    return fetch(GAS_URL + "?" + params.toString(), { method:"GET" })
-      .then(r => r.json())
-      .catch(() => null);
+    return fetch(GAS_URL + "?" + params.toString(), {
+      method: "GET",
+      redirect: "follow"
+    }).then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).catch(() => null);
   }
 
   function show(id) {
@@ -225,67 +228,42 @@
     if (!kode) { err.textContent = "Masukkan kode party terlebih dahulu."; return; }
     const party = PARTIES[kode];
     if (!party) { err.textContent = "Kode tidak dikenali. Coba lagi."; return; }
+
     err.textContent = "";
+    err.style.color = "#FFD700";
+    err.textContent = "Memuat data kelompok...";
+
     ST.kode  = kode;
     ST.party = party;
+    loadLocal(); // load logs & gameInfo dari cache lokal
 
-    // 1. Load data lokal mahasiswa dulu (logs, game info dari sesi sebelumnya)
-    loadLocal();
-
-    // 2. Coba baca data anggota dari localStorage yang diisi dosen
-    //    Dosen menyimpan dengan key "dosen_members_Kelompok X"
-    tryLoadDosenData(party.guild);
-
-    // 3. Coba fetch dari GAS (opsional, sebagai sync online)
-    //    Pakai no-cors dengan JSONP workaround via script tag
-    fetchMembersViaScript(party.guild, function(members) {
-      if (members && members.length) {
-        ST.members = members;
-        saveLocal();
-        renderMemberGrid();
-      }
-    });
-
-    renderParty();
-    show("s-party");
-    showExportBtn();
-  }
-
-  function tryLoadDosenData(guild) {
-    // Baca dari localStorage yang diisi dosen (shared storage same origin)
-    try {
-      const dosenKey = "dosen_members_" + guild;
-      const raw = localStorage.getItem(dosenKey);
-      if (raw) {
-        const data = JSON.parse(raw);
-        const valid = data.filter(m => m && m.nama);
-        if (valid.length > 0 && ST.members.filter(m=>m.nama).length === 0) {
-          ST.members = data;
+    // Ambil data anggota dari GAS via GET (work cross-device)
+    callGASRead({ action:"getMembers", kelompok: party.guild })
+      .then(res => {
+        if (res && res.status === "success" && res.result && res.result.length) {
+          ST.members = res.result;
           saveLocal();
         }
-      }
-
-      // Baca game info dari dosen jika ada
-      const gameKey = "dosen_game_" + guild;
-      const gameRaw = localStorage.getItem(gameKey);
-      if (gameRaw && !ST.gameInfo) {
-        ST.gameInfo = JSON.parse(gameRaw);
-      }
-    } catch(e) {}
-  }
-
-  function fetchMembersViaScript(guild, cb) {
-    // Fetch GAS via no-cors (fire and forget untuk sync)
-    // Data utama tetap dari localStorage, ini hanya untuk update
-    try {
-      const url = GAS_URL + "?action=getMembers&kelompok=" + encodeURIComponent(guild) + "&cb=gasCallback_" + Date.now();
-      window._gasCallbackMembers = cb;
-      fetch(GAS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify({ action:"getMembers", kelompok: guild })
-      }).catch(() => {});
-    } catch(e) {}
+        // Ambil info game
+        return callGASRead({ action:"getGameInfo", kelompok: party.guild });
+      })
+      .then(res2 => {
+        if (res2 && res2.result) {
+          ST.gameInfo = res2.result;
+          saveLocal();
+        }
+        err.textContent = "";
+        renderParty();
+        show("s-party");
+        showExportBtn();
+      })
+      .catch(() => {
+        // Fallback: pakai data lokal kalau GAS tidak bisa diakses
+        err.textContent = "";
+        renderParty();
+        show("s-party");
+        showExportBtn();
+      });
   }
 
   function doLogout() {
