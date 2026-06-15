@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Quest — Guild Leaderboard</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d0e0f;color:#fff;font-family:'Courier New',monospace;min-height:100vh;padding:1.5rem}
+    .wrap{max-width:680px;margin:0 auto}
+    .sec-lbl{font-size:10px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+    .tab-row{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
+    .tab-btn{padding:6px 14px;background:#111316;color:#888;border:1px solid #333;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
+    .tab-btn.active{background:#FFD700;color:#000;border-color:#FFD700;font-weight:bold}
+    .lb-row{display:flex;align-items:center;gap:12px;background:#111316;border:1px solid #222;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+    .lb-row.rank-1{border-color:#FFD700}
+    .lb-row.rank-2{border-color:#aaa}
+    .lb-row.rank-3{border-color:#cd7f32}
+    .lb-bar-wrap{height:5px;background:#222;border-radius:3px;flex:1}
+    .lb-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+    .badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+    .badge-card{background:#111316;border:1px solid #222;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+    .badge-card.locked{opacity:.4}
+    .back-link{color:#555;font-size:11px;text-decoration:none;font-family:'Courier New',monospace;display:inline-flex;align-items:center;gap:4px;margin-bottom:1.25rem}
+    .back-link:hover{color:#FFD700}
+    .divider{border:none;border-top:1px solid #1a1a1a;margin:1.25rem 0}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" class="back-link">&#x2190; Kembali ke Portal</a>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px">
+    <div style="color:#FFD700;font-size:16px;font-weight:bold;letter-spacing:2px">&#x2694; GUILD LEADERBOARD</div>
+    <button onclick="refreshData()" style="background:transparent;color:#555;border:1px solid #333;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace"
+      onmouseover="this.style.color='#FFD700';this.style.borderColor='#FFD700'"
+      onmouseout="this.style.color='#555';this.style.borderColor='#333'">
+      &#x21BB; Refresh
+    </button>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="setTab('board',this)">&#x1F3C6; Papan Peringkat</button>
+    <button class="tab-btn" onclick="setTab('badge',this)">&#x1F3C5; Daftar Badge</button>
+    <button class="tab-btn" onclick="setTab('xp',this)">&#x2B50; Sistem XP</button>
+  </div>
+
+  <div id="tab-board">
+    <div class="sec-lbl">Ranking kelompok berdasarkan total XP — diperbarui otomatis</div>
+    <div id="leaderboardList"></div>
+  </div>
+
+  <div id="tab-badge" style="display:none">
+    <div class="sec-lbl">Semua badge yang bisa didapatkan — raih semua untuk membuktikan kehebatan guild!</div>
+    <div class="badge-grid" id="badgeList"></div>
+  </div>
+
+  <div id="tab-xp" style="display:none">
+    <div class="sec-lbl">Cara mendapatkan XP</div>
+    <div id="xpRules"></div>
+  </div>
+
+  <div class="divider"></div>
+  <div style="text-align:center">
+    <a href="index.html" style="color:#444;font-size:11px;text-decoration:none;font-family:'Courier New',monospace;border:1px solid #222;border-radius:6px;padding:6px 16px;display:inline-block;margin-right:8px"
+      onmouseover="this.style.color='#FFD700';this.style.borderColor='#FFD700'"
+      onmouseout="this.style.color='#444';this.style.borderColor='#222'">
+      &#x2694; Portal Mahasiswa
+    </a>
+    <a href="dosen.html" style="color:#444;font-size:11px;text-decoration:none;font-family:'Courier New',monospace;border:1px solid #222;border-radius:6px;padding:6px 16px;display:inline-block"
+      onmouseover="this.style.color='#c0392b';this.style.borderColor='#c0392b'"
+      onmouseout="this.style.color='#444';this.style.borderColor='#222'">
+      &#x1F393; Panel Dosen
+    </a>
+  </div>
+</div>
+
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
+
+  const PARTIES = [
+    { key:"Kelompok 1", color:"#e74c3c", label:"Iron Vanguard",  el:"fire",    kode:"PARTY1-MV" },
+    { key:"Kelompok 2", color:"#3498db", label:"Storm Arcane",   el:"thunder", kode:"PARTY2-MV" },
+    { key:"Kelompok 3", color:"#27ae60", label:"Earth Titan",    el:"earth",   kode:"PARTY3-MV" },
+    { key:"Kelompok 4", color:"#9b59b6", label:"Shadow Blade",   el:"shadow",  kode:"PARTY4-MV" },
+    { key:"Kelompok 5", color:"#f39c12", label:"Golden Sage",    el:"light",   kode:"PARTY5-MV" }
+  ];
+
+  const BADGE_DEFS = [
+    { id:"first_blood", icon:"&#x2694;&#xFE0F;", name:"First Blood",     desc:"Pertama kali mengirim laporan",                   xp:50  },
+    { id:"streak2",     icon:"&#x1F525;",        name:"On Fire",          desc:"Laporan 2 minggu berturut-turut",                  xp:100 },
+    { id:"streak4",     icon:"&#x1F48E;",        name:"Diamond Streak",   desc:"Laporan lengkap semua 4 minggu",                   xp:300 },
+    { id:"full100",     icon:"&#x2B50;",         name:"Completionist",    desc:"Minimal 1 anggota capai progres 100%",             xp:200 },
+    { id:"all_github",  icon:"&#x1F419;",        name:"Git Master",       desc:"Semua anggota sertakan link GitHub commit",        xp:150 },
+    { id:"game_info",   icon:"&#x1F4DC;",        name:"Lore Keeper",      desc:"Kelompok sudah mengisi info game lengkap",          xp:100 },
+    { id:"avg75",       icon:"&#x1F3F9;",        name:"Sharp Archer",     desc:"Rata-rata progres kelompok mencapai 75%+",          xp:200 },
+    { id:"top1",        icon:"&#x1F451;",        name:"Guild Master",     desc:"Menjadi kelompok #1 di leaderboard",               xp:0   },
+    { id:"early_bird",  icon:"&#x1F305;",        name:"Early Bird",       desc:"Pertama submit laporan di antara semua kelompok",  xp:75  }
+  ];
+
+  const XP_RULES = [
+    { icon:"&#x1F4CB;", label:"Kirim laporan mingguan",      xp:"+100 XP / laporan" },
+    { icon:"&#x1F4AF;", label:"Progres 100% dalam laporan",  xp:"+50 XP bonus"      },
+    { icon:"&#x1F419;", label:"Sertakan link GitHub commit", xp:"+25 XP / laporan"  },
+    { icon:"&#x1F4DC;", label:"Isi info game kelompok",      xp:"+100 XP (sekali)"  },
+    { icon:"&#x1F525;", label:"Streak 2 minggu berturut",    xp:"+100 XP bonus"     },
+    { icon:"&#x1F48E;", label:"Streak 4 minggu penuh",       xp:"+300 XP bonus"     },
+    { icon:"&#x2B50;",  label:"Ada anggota capai 100%",      xp:"+200 XP bonus"     },
+    { icon:"&#x1F3F9;", label:"Avg progres kelompok 75%+",   xp:"+200 XP bonus"     },
+    { icon:"&#x1F305;", label:"Submit pertama hari itu",     xp:"+75 XP bonus"      }
+  ];
+
+  const LEVEL_THRESHOLDS = [0,200,500,900,1400,2000,2700,3500,4400,5400];
+  const LEVEL_NAMES = ["Novice","Apprentice","Adventurer","Knight","Champion","Hero","Legend","Myth","Epic","Godlike"];
+
+  var allProgress = [];
+
+  function callGASRead(payload) {
+    return fetch(GAS_URL, {
+      method:"POST", body: JSON.stringify(payload),
+      headers:{"Content-Type":"application/json"}
+    }).then(function(r){ return r.json(); }).catch(function(){ return null; });
+  }
+
+  function refreshData() {
+    callGASRead({ action:"getAllProgress" }).then(function(res) {
+      if (res && res.result) allProgress = res.result;
+      renderAll();
+    }).catch(function(){ renderAll(); });
+  }
+
+  function getLevel(xp) {
+    var lv = 0;
+    for (var i = LEVEL_THRESHOLDS.length-1; i >= 0; i--) {
+      if (xp >= LEVEL_THRESHOLDS[i]) { lv = i; break; }
+    }
+    return { level: lv+1, name: LEVEL_NAMES[lv] };
+  }
+
+  function getLvPct(xp) {
+    var lv = 0;
+    for (var i = LEVEL_THRESHOLDS.length-1; i >= 0; i--) {
+      if (xp >= LEVEL_THRESHOLDS[i]) { lv = i; break; }
+    }
+    var curr = LEVEL_THRESHOLDS[lv];
+    var next = LEVEL_THRESHOLDS[lv+1] || (curr+1000);
+    return Math.round(((xp-curr)/(next-curr))*100);
+  }
+
+  function calcParty(party) {
+    var logs     = allProgress.filter(function(l){ return l.kelompok === party.key; });
+    var weeks    = ["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];
+    var xp       = 0;
+    var badges   = [];
+    var memberSet= {};
+
+    logs.forEach(function(l) {
+      xp += 100;
+      if (parseInt((l.progres||"0").replace("%","")) >= 100) xp += 50;
+      if (l.github) xp += 25;
+      memberSet[l.nim||l.nama] = true;
+    });
+
+    var local_game = null;
+    try {
+      var gs = localStorage.getItem("pq_"+party.kode+"_game");
+      if (gs) local_game = JSON.parse(gs);
+    } catch(e){}
+    if (local_game && local_game.title) { xp += 100; badges.push("game_info"); }
+
+    if (logs.length > 0) badges.push("first_blood");
+
+    var weekSet = {};
+    logs.forEach(function(l){ weekSet[l.minggu] = true; });
+    var cur = 0, maxC = 0;
+    weeks.forEach(function(w){ if(weekSet[w]){cur++;if(cur>maxC)maxC=cur;}else cur=0; });
+    if (maxC >= 2) { badges.push("streak2"); xp += 100; }
+    if (maxC >= 4) { badges.push("streak4"); xp += 300; }
+
+    var has100 = logs.some(function(l){ return parseInt((l.progres||"0").replace("%",""))>=100; });
+    if (has100) { badges.push("full100"); xp += 200; }
+
+    var nmSet = {};
+    logs.forEach(function(l){ if(l.github) nmSet[l.nim||l.nama]=true; });
+    var memberKeys = Object.keys(memberSet);
+    if (memberKeys.length > 0 && Object.keys(nmSet).length >= memberKeys.length) {
+      badges.push("all_github"); xp += 150;
+    }
+
+    var pVals = logs.map(function(l){ return parseInt((l.progres||"0").replace("%",""))||0; });
+    var avg   = pVals.length ? Math.round(pVals.reduce(function(a,b){return a+b;},0)/pVals.length) : 0;
+    if (avg >= 75) { badges.push("avg75"); xp += 200; }
+
+    return { xp:xp, badges:badges, avg:avg, logCount:logs.length, memberCount:memberKeys.length };
+  }
+
+  function drawSprite(el, color, size) {
+    var extras = {
+      fire:    '<polygon points="35,10 50,2 65,10 60,25 40,25" fill="'+color+'" opacity=".5"/>',
+      thunder: '<polygon points="50,4 59,22 52,22 61,40 41,22 48,22" fill="#FFD700" opacity=".9"/>',
+      earth:   '<rect x="13" y="40" width="8" height="28" rx="3" fill="#8B6914"/><rect x="9" y="36" width="16" height="8" rx="3" fill="#8B6914"/>',
+      shadow:  '<ellipse cx="50" cy="10" rx="16" ry="7" fill="'+color+'" opacity=".5"/>',
+      light:   '<circle cx="50" cy="30" r="24" fill="none" stroke="'+color+'" stroke-width="2.5" opacity=".35"/>'
+    };
+    return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'">'
+      + '<circle cx="50" cy="30" r="18" fill="'+color+'" opacity=".9"/>'
+      + '<rect x="38" y="44" width="24" height="30" rx="5" fill="'+color+'" opacity=".8"/>'
+      + '<rect x="20" y="46" width="14" height="22" rx="5" fill="'+color+'" opacity=".7"/>'
+      + '<rect x="66" y="46" width="14" height="22" rx="5" fill="'+color+'" opacity=".7"/>'
+      + '<rect x="34" y="74" width="13" height="18" rx="5" fill="'+color+'" opacity=".7"/>'
+      + '<rect x="53" y="74" width="13" height="18" rx="5" fill="'+color+'" opacity=".7"/>'
+      + (extras[el]||"")
+      + '</svg>';
+  }
+
+  function setTab(tab, btn) {
+    document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("tab-board").style.display = tab==="board" ? "block" : "none";
+    document.getElementById("tab-badge").style.display = tab==="badge" ? "block" : "none";
+    document.getElementById("tab-xp").style.display    = tab==="xp"    ? "block" : "none";
+  }
+
+  function renderLeaderboard() {
+    var data = PARTIES.map(function(p) {
+      var d = calcParty(p);
+      return { party:p, xp:d.xp, badges:d.badges, avg:d.avg, logCount:d.logCount, memberCount:d.memberCount };
+    });
+    data.sort(function(a,b){ return b.xp - a.xp; });
+
+    var rankIcons  = ["&#x1F451;","&#x1F948;","&#x1F949;","4","5"];
+    var rankColors = ["#FFD700","#aaa","#cd7f32","#555","#555"];
+    var rankClass  = ["rank-1","rank-2","rank-3","",""];
+
+    if (data[0]) data[0].badges.push("top1");
+
+    document.getElementById("leaderboardList").innerHTML = data.map(function(d,i) {
+      var lv  = getLevel(d.xp);
+      var pct = getLvPct(d.xp);
+      var bIcons = d.badges.slice(0,6).map(function(bid) {
+        var b = BADGE_DEFS.find(function(x){ return x.id===bid; });
+        return b ? '<span title="'+b.name+'" style="font-size:14px;cursor:default">'+b.icon+'</span>' : "";
+      }).join("");
+
+      return '<div class="lb-row '+rankClass[i]+'">'
+        + '<div style="font-size:'+(i<3?"22px":"14px")+';font-weight:bold;width:32px;text-align:center;flex-shrink:0;color:'+rankColors[i]+'">'+rankIcons[i]+'</div>'
+        + '<div style="flex-shrink:0">'+drawSprite(d.party.el, d.party.color, 44)+'</div>'
+        + '<div style="flex:1;min-width:0">'
+        +   '<div style="font-size:13px;font-weight:bold;color:#fff;margin-bottom:2px">'+d.party.key+' <span style="color:'+d.party.color+';font-size:11px;font-weight:normal">— '+d.party.label+'</span></div>'
+        +   '<div style="font-size:10px;color:#555;margin-bottom:4px">'+d.logCount+' laporan &bull; '+d.memberCount+' anggota &bull; avg '+d.avg+'%</div>'
+        +   (bIcons ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">'+bIcons+'</div>' : '')
+        +   '<div style="display:flex;align-items:center;gap:8px">'
+        +     '<div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:'+pct+'%;background:'+d.party.color+'"></div></div>'
+        +     '<span style="font-size:10px;color:#555;white-space:nowrap">Lv.'+lv.level+' '+lv.name+'</span>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="text-align:right;flex-shrink:0;min-width:56px">'
+        +   '<div style="font-size:18px;font-weight:bold;color:'+(d.xp>0?d.party.color:'#333')+'">'+d.xp+'</div>'
+        +   '<div style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.5px">XP</div>'
+        + '</div>'
+        + '</div>';
+    }).join("");
+  }
+
+  function renderBadges() {
+    var allUnlocked = [];
+    PARTIES.forEach(function(p){ allUnlocked = allUnlocked.concat(calcParty(p).badges); });
+
+    document.getElementById("badgeList").innerHTML = BADGE_DEFS.map(function(b) {
+      var got = allUnlocked.indexOf(b.id) >= 0;
+      return '<div class="badge-card '+(got?"unlocked":"locked")+'">'
+        + '<div style="font-size:22px;flex-shrink:0">'+b.icon+'</div>'
+        + '<div>'
+        +   '<div style="font-size:12px;font-weight:bold;color:#ddd;margin-bottom:2px">'+b.name+(b.xp>0?' <span style="color:#FFD700;font-size:10px">+'+b.xp+' XP</span>':'')+'</div>'
+        +   '<div style="font-size:10px;color:#666;line-height:1.4">'+b.desc+'</div>'
+        +   (got ? '<div style="font-size:10px;color:#27ae60;margin-top:3px">&#x2713; Sudah diraih</div>'
+                 : '<div style="font-size:10px;color:#444;margin-top:3px">&#x1F512; Belum diraih</div>')
+        + '</div>'
+        + '</div>';
+    }).join("");
+  }
+
+  function renderXP() {
+    document.getElementById("xpRules").innerHTML =
+      '<div style="background:#111316;border:1px solid #222;border-radius:10px;overflow:hidden;margin-bottom:1rem">'
+      + XP_RULES.map(function(r,i) {
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;'+(i<XP_RULES.length-1?"border-bottom:1px solid #1a1a1a":"")+'">'
+            + '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:16px">'+r.icon+'</span><span style="font-size:12px;color:#ccc">'+r.label+'</span></div>'
+            + '<span style="font-size:12px;font-weight:bold;color:#FFD700;white-space:nowrap">'+r.xp+'</span>'
+            + '</div>';
+        }).join("")
+      + '</div>'
+      + '<div class="sec-lbl">Level progression</div>'
+      + '<div style="background:#111316;border:1px solid #222;border-radius:10px;overflow:hidden">'
+      + LEVEL_NAMES.map(function(name,i) {
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;'+(i<LEVEL_NAMES.length-1?"border-bottom:1px solid #1a1a1a":"")+'">'
+            + '<span style="font-size:11px;color:#ccc">Lv.'+(i+1)+' — '+name+'</span>'
+            + '<span style="font-size:11px;color:#555">'+LEVEL_THRESHOLDS[i]+' XP</span>'
+            + '</div>';
+        }).join("")
+      + '</div>';
+  }
+
+  function renderAll() {
+    renderLeaderboard();
+    renderBadges();
+    renderXP();
+  }
+
+  refreshData();
+</script>
+</body>
+</html>
