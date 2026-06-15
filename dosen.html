@@ -199,8 +199,8 @@
   // ⚠️ Ganti URL berikut dengan URL deploy terbaru Google Apps Script Anda
   const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
 
-  // ⚠️ Ganti kode dosen sesuai yang ada di GAS (CONFIG.KODE_DOSEN)
-  const KODE_DOSEN = "DOSEN-MV2025";
+  // Kode dosen diverifikasi langsung ke GAS — tidak perlu diubah di sini
+  // Ganti KODE_DOSEN hanya di Google Apps Script (baris CONFIG.KODE_DOSEN)
 
   const PARTIES = [
     { key:"Kelompok 1", color:"#e74c3c", label:"Iron Vanguard"  },
@@ -256,9 +256,28 @@
     const kode = document.getElementById("dosenKode").value.trim();
     const err  = document.getElementById("dosenErr");
     if (!kode) { err.textContent = "Masukkan kode dosen."; return; }
-    if (kode !== KODE_DOSEN) { err.textContent = "Kode dosen tidak valid."; return; }
-    err.textContent = "";
-    loadDashboard();
+
+    err.style.color = "#FFD700";
+    err.textContent = "Memverifikasi...";
+
+    // Verifikasi kode ke GAS langsung — tidak hardcode di HTML
+    const params = new URLSearchParams({ data: JSON.stringify({ action:"verifyDosen", kode }) });
+    fetch(GAS_URL + "?" + params.toString(), { method:"GET", redirect:"follow" })
+      .then(r => r.json())
+      .then(res => {
+        if (res && res.result === true) {
+          err.textContent = "";
+          loadDashboard();
+        } else {
+          err.style.color = "#ff4c4c";
+          err.textContent = "Kode dosen tidak valid.";
+        }
+      })
+      .catch(() => {
+        // Fallback offline: tidak bisa verifikasi tanpa koneksi
+        err.style.color = "#ff4c4c";
+        err.textContent = "Tidak dapat terhubung ke server. Periksa koneksi internet.";
+      });
   }
 
   function dosenLogout() {
