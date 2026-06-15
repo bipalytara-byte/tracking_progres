@@ -439,8 +439,25 @@
       return;
     }
     document.getElementById("anggotaErr").textContent = "";
+
+    // Simpan ke key dosen (untuk panel dosen)
     localStorage.setItem("dosen_members_" + kelompok, JSON.stringify(members));
+
+    // Simpan ke key mahasiswa (shared localStorage agar mahasiswa bisa baca)
+    // Key format: pq_PARTYX-MV_members
+    const kodeMap = {
+      "Kelompok 1":"PARTY1-MV", "Kelompok 2":"PARTY2-MV",
+      "Kelompok 3":"PARTY3-MV", "Kelompok 4":"PARTY4-MV",
+      "Kelompok 5":"PARTY5-MV"
+    };
+    const kode = kodeMap[kelompok];
+    if (kode) {
+      localStorage.setItem("pq_" + kode + "_members", JSON.stringify(members));
+    }
+
+    // Kirim ke GAS
     callGAS({ action:"saveMembers", kelompok, members });
+
     document.getElementById("anggotaOk").textContent = "Data anggota " + kelompok + " berhasil disimpan!";
     setTimeout(() => document.getElementById("anggotaOk").textContent = "", 3000);
     renderOverview();
