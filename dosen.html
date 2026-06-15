@@ -213,7 +213,13 @@
 
   /* ── HELPERS ── */
   function callGAS(payload) {
-    fetch(GAS_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) }).catch(()=>{});
+    // Kirim via GET agar data bisa masuk ke Sheets tanpa CORS issue
+    const params = new URLSearchParams({ data: JSON.stringify(payload) });
+    fetch(GAS_URL + "?" + params.toString(), { method:"GET", redirect:"follow" })
+      .catch(() => {
+        // Fallback no-cors
+        fetch(GAS_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) }).catch(()=>{});
+      });
   }
 
   function callGASRead(payload) {
