@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Quest — Panel Dosen</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d0e0f;color:#fff;font-family:'Courier New',monospace;min-height:100vh;padding:1.5rem}
+    .screen{display:none}.screen.active{display:block}
+    .d-wrap{max-width:780px;margin:0 auto}
+
+    /* LOGIN */
+    .login-card{background:#1a1c1e;border:1.5px solid #c0392b;border-radius:12px;padding:2rem;max-width:400px;margin:0 auto}
+    .login-title{color:#c0392b;font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px;letter-spacing:2px;text-transform:uppercase}
+    .login-sub{color:#888;font-size:12px;text-align:center;margin-bottom:1.5rem}
+
+    /* INPUTS & BUTTONS */
+    .d-input{width:100%;padding:11px 13px;background:#0d0e0f;color:#fff;border:1px solid #444;border-radius:8px;font-family:'Courier New',monospace;font-size:13px;margin-bottom:10px;outline:none}
+    .d-input:focus{border-color:#c0392b}
+    .m-inp{width:100%;background:#0d0e0f;color:#fff;border:1px solid #333;border-radius:6px;padding:7px 9px;font-family:'Courier New',monospace;font-size:12px;outline:none}
+    .m-inp:focus{border-color:#FFD700}
+    .m-sel{width:100%;background:#0d0e0f;color:#fff;border:1px solid #333;border-radius:6px;padding:7px 8px;font-family:'Courier New',monospace;font-size:12px;outline:none}
+    .m-sel:focus{border-color:#FFD700}
+    .btn{font-family:'Courier New',monospace;font-weight:bold;font-size:13px;border:none;border-radius:8px;cursor:pointer;letter-spacing:1px;padding:11px;width:100%;margin-top:4px}
+    .btn-red{background:#c0392b;color:#fff}.btn-red:hover{background:#e74c3c}
+    .btn-gold{background:#FFD700;color:#000}.btn-gold:hover{background:#FFA500}
+    .btn-sec{background:transparent;color:#aaa;border:1px solid #444;margin-top:6px}.btn-sec:hover{border-color:#aaa;color:#fff}
+    .btn-sm{width:auto;padding:6px 14px;font-size:11px;margin-top:0}
+    .btn-del{background:transparent;border:1px solid #333;color:#666;border-radius:6px;padding:7px 10px;cursor:pointer;font-size:12px;font-family:'Courier New',monospace}
+    .btn-del:hover{border-color:#c0392b;color:#c0392b}
+    .err{color:#ff4c4c;font-size:12px;text-align:center;margin-top:8px;min-height:16px}
+    .ok{color:#4cff4c;font-size:12px;text-align:center;margin-top:8px;min-height:16px}
+
+    /* NAV */
+    .d-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px;padding-bottom:1rem;border-bottom:1px solid #1e2020}
+    .d-nav-title{color:#c0392b;font-size:15px;font-weight:bold;letter-spacing:1px}
+    .d-nav-tabs{display:flex;gap:6px;flex-wrap:wrap}
+    .nav-tab{padding:6px 14px;background:#111316;color:#888;border:1px solid #333;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
+    .nav-tab.active{background:#c0392b;color:#fff;border-color:#c0392b;font-weight:bold}
+    .logout-btn{padding:5px 12px;background:transparent;color:#555;border:1px solid #333;border-radius:6px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
+    .logout-btn:hover{color:#ff4c4c;border-color:#c0392b}
+
+    /* CARDS & SECTIONS */
+    .sec-lbl{font-size:10px;color:#666;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+    .divider{border:none;border-top:1px solid #1e2020;margin:1rem 0}
+    .box{background:#111316;border:1px solid #222;border-radius:10px;padding:1rem;margin-bottom:10px}
+
+    /* STAT CARDS */
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
+    .stat-card{background:#111316;border:1px solid #222;border-radius:10px;padding:12px;text-align:center}
+    .stat-num{font-size:22px;font-weight:bold;margin-bottom:3px}
+    .stat-lbl{font-size:10px;color:#666;letter-spacing:.5px;text-transform:uppercase}
+
+    /* OVERVIEW PARTY CARDS */
+    .party-card{background:#111316;border:1px solid #222;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+    .pbar-wrap{height:4px;background:#222;border-radius:2px;margin:7px 0 10px}
+    .pbar-fill{height:100%;border-radius:2px;transition:width .4s}
+
+    /* PROGRESS TABLE */
+    .prog-table-wrap{overflow-x:auto}
+    .prog-table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}
+    .prog-table th{background:#111316;color:#888;padding:8px 10px;text-align:left;font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid #222;white-space:nowrap}
+    .prog-table td{padding:8px 10px;border-bottom:1px solid #1a1a1a;color:#ccc;vertical-align:middle}
+    .prog-table tr:hover td{background:#111316}
+    .pbar-mini{width:60px;height:4px;background:#222;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:4px}
+    .pbar-mini-fill{height:100%;border-radius:2px;display:block}
+    .party-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+    .pt{padding:5px 12px;background:#111316;color:#888;border:1px solid #333;border-radius:16px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace;font-weight:bold}
+
+    /* ANGGOTA FORM */
+    .anggota-header-row{display:grid;grid-template-columns:28px 1fr 1.4fr 75px 1.2fr 32px;gap:7px;margin-bottom:5px}
+    .anggota-data-row{display:grid;grid-template-columns:28px 1fr 1.4fr 75px 1.2fr 32px;gap:7px;align-items:center;margin-bottom:7px}
+
+    /* KRITERIA */
+    .krit-box{background:#111316;border:1px solid #222;border-radius:10px;padding:1rem;margin-bottom:10px}
+    .krit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .krit-row{display:grid;grid-template-columns:1fr 95px 32px;gap:8px;align-items:center;margin-bottom:7px}
+    .total-bar{display:flex;align-items:center;justify-content:space-between;background:#111316;border:1px solid #333;border-radius:8px;padding:12px 16px;margin-top:10px}
+
+    @media(max-width:600px){
+      .anggota-header-row,.anggota-data-row{grid-template-columns:24px 1fr 1fr 60px 28px;gap:5px}
+      .anggota-data-row .jobdesk-col{display:none}
+      .anggota-header-row .jobdesk-lbl{display:none}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SCREEN: LOGIN -->
+  <div id="s-login" class="screen active">
+    <div class="login-card">
+      <div style="font-size:28px;text-align:center;margin-bottom:.5rem">&#x1F393;</div>
+      <div class="login-title">Panel Dosen</div>
+      <div class="login-sub">Portal Quest — RPG Maker MV Project Tracker</div>
+      <input class="d-input" id="dosenKode" type="password" placeholder="Masukkan kode dosen"
+        onkeydown="if(event.key==='Enter')dosenLogin()">
+      <button class="btn btn-red" onclick="dosenLogin()">&#x25B6; Masuk Panel Dosen</button>
+      <div class="err" id="dosenErr"></div>
+      <div style="margin-top:1.5rem;text-align:center">
+        <a href="index.html" style="color:#444;font-size:11px;text-decoration:none">&#x2190; Kembali ke Portal Mahasiswa</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: DASHBOARD -->
+  <div id="s-dashboard" class="screen">
+    <div class="d-wrap">
+
+      <div class="d-nav">
+        <div class="d-nav-title">&#x1F393; Panel Dosen</div>
+        <div class="d-nav-tabs">
+          <button class="nav-tab active" onclick="setTab('overview',this)">&#x1F4CA; Overview</button>
+          <button class="nav-tab" onclick="setTab('anggota',this)">&#x1F465; Data Anggota</button>
+          <button class="nav-tab" onclick="setTab('progres',this)">&#x1F4CB; Tracking Progres</button>
+          <button class="nav-tab" onclick="setTab('kriteria',this)">&#x2696; Kriteria Penilaian</button>
+        </div>
+        <button class="logout-btn" onclick="dosenLogout()">Logout</button>
+      </div>
+
+      <!-- TAB OVERVIEW -->
+      <div id="tab-overview">
+        <div class="stat-grid" id="statGrid"></div>
+        <div class="sec-lbl">Ringkasan progres per kelompok</div>
+        <div id="overviewCards"></div>
+        <div style="text-align:right;margin-top:10px">
+          <button class="btn btn-sec btn-sm" onclick="refreshData()">&#x21BB; Refresh Data dari Sheets</button>
+        </div>
+      </div>
+
+      <!-- TAB ANGGOTA -->
+      <div id="tab-anggota" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+          <div class="sec-lbl" style="margin-bottom:0">Input data anggota per kelompok</div>
+          <select class="m-sel" style="width:auto;padding:6px 10px;min-width:200px" id="kelompokSel" onchange="renderAnggotaForm()">
+            <option value="Kelompok 1">Kelompok 1 — Iron Vanguard</option>
+            <option value="Kelompok 2">Kelompok 2 — Storm Arcane</option>
+            <option value="Kelompok 3">Kelompok 3 — Earth Titan</option>
+            <option value="Kelompok 4">Kelompok 4 — Shadow Blade</option>
+            <option value="Kelompok 5">Kelompok 5 — Golden Sage</option>
+          </select>
+        </div>
+        <div id="anggotaFormArea"></div>
+        <button class="btn btn-gold" onclick="simpanAnggota()">&#x1F4BE; Simpan ke Google Sheets</button>
+        <div class="ok" id="anggotaOk"></div>
+        <div class="err" id="anggotaErr"></div>
+      </div>
+
+      <!-- TAB PROGRES -->
+      <div id="tab-progres" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+          <span class="sec-lbl" style="margin-bottom:0">Filter:</span>
+          <div class="party-tabs" id="progPartyTabs"></div>
+        </div>
+        <div class="prog-table-wrap">
+          <table class="prog-table">
+            <thead><tr>
+              <th>Kelompok</th>
+              <th>NIM</th>
+              <th>Nama</th>
+              <th>Role</th>
+              <th>Minggu 1</th>
+              <th>Minggu 2</th>
+              <th>Minggu 3</th>
+              <th>Minggu 4</th>
+              <th>Avg</th>
+            </tr></thead>
+            <tbody id="progBody"></tbody>
+          </table>
+        </div>
+        <div style="text-align:right;margin-top:10px">
+          <button class="btn btn-sec btn-sm" onclick="refreshData()">&#x21BB; Refresh</button>
+        </div>
+      </div>
+
+      <!-- TAB KRITERIA -->
+      <div id="tab-kriteria" style="display:none">
+        <div class="sec-lbl" style="margin-bottom:1rem">Atur sub kriteria dan bobot penilaian — total harus 100%</div>
+        <div id="kriteriaArea"></div>
+        <div class="total-bar">
+          <div>
+            <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Total Bobot</div>
+            <div style="font-size:22px;font-weight:bold" id="totalPersen">0%</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:#888;margin-bottom:6px" id="totalStatus">Harus mencapai 100%</div>
+            <button class="btn btn-gold btn-sm" onclick="simpanKriteria()">&#x1F4BE; Simpan Kriteria</button>
+          </div>
+        </div>
+        <div class="ok" id="kriteriaOk" style="margin-top:8px"></div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // ⚠️ Ganti URL berikut dengan URL deploy terbaru Google Apps Script Anda
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
+
+  // ⚠️ Ganti kode dosen sesuai yang ada di GAS (CONFIG.KODE_DOSEN)
+  const KODE_DOSEN = "DOSEN-MV2025";
+
+  const PARTIES = [
+    { key:"Kelompok 1", color:"#e74c3c", label:"Iron Vanguard"  },
+    { key:"Kelompok 2", color:"#3498db", label:"Storm Arcane"   },
+    { key:"Kelompok 3", color:"#27ae60", label:"Earth Titan"    },
+    { key:"Kelompok 4", color:"#9b59b6", label:"Shadow Blade"   },
+    { key:"Kelompok 5", color:"#f39c12", label:"Golden Sage"    }
+  ];
+
+  const TIPE_CONFIG = {
+    tugas: { label:"Tugas Harian", color:"#3498db" },
+    uts:   { label:"UTS",          color:"#f39c12" },
+    uas:   { label:"UAS",          color:"#c0392b" }
+  };
+
+  let DST = {
+    allMembers:    {},
+    allProgress:   [],
+    criteria:      { tugas:[], uts:[], uas:[] },
+    filterKelompok:"semua"
+  };
+
+  /* ── HELPERS ── */
+  function callGAS(payload) {
+    fetch(GAS_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) }).catch(()=>{});
+  }
+
+  function callGASRead(payload) {
+    return fetch(GAS_URL, {
+      method: "POST",
+      body:   JSON.stringify(payload),
+      headers:{ "Content-Type":"application/json" }
+    }).then(r => r.json()).catch(() => null);
+  }
+
+  function show(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function setTab(tab, btn) {
+    document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    ["overview","anggota","progres","kriteria"].forEach(t => {
+      document.getElementById("tab-"+t).style.display = t === tab ? "block" : "none";
+    });
+    if (tab === "anggota")  renderAnggotaForm();
+    if (tab === "progres")  renderProgresTab();
+    if (tab === "kriteria") renderKriteriaTab();
+  }
+
+  /* ── LOGIN / LOGOUT ── */
+  function dosenLogin() {
+    const kode = document.getElementById("dosenKode").value.trim();
+    const err  = document.getElementById("dosenErr");
+    if (!kode) { err.textContent = "Masukkan kode dosen."; return; }
+    if (kode !== KODE_DOSEN) { err.textContent = "Kode dosen tidak valid."; return; }
+    err.textContent = "";
+    loadDashboard();
+  }
+
+  function dosenLogout() {
+    DST = { allMembers:{}, allProgress:[], criteria:{tugas:[],uts:[],uas:[]}, filterKelompok:"semua" };
+    document.getElementById("dosenKode").value = "";
+    show("s-login");
+  }
+
+  /* ── LOAD DASHBOARD ── */
+  function loadDashboard() {
+    show("s-dashboard");
+
+    PARTIES.forEach(p => {
+      const saved = localStorage.getItem("dosen_members_" + p.key);
+      DST.allMembers[p.key] = saved ? JSON.parse(saved) : blankMembers();
+    });
+
+    const savedCrit = localStorage.getItem("dosen_criteria");
+    DST.criteria = savedCrit ? JSON.parse(savedCrit) : defaultCriteria();
+
+    callGASRead({ action:"getAllProgress" }).then(res => {
+      if (res && res.result) DST.allProgress = res.result;
+      renderOverview();
+    }).catch(() => renderOverview());
+
+    renderOverview();
+    setTab("overview", document.querySelector(".nav-tab"));
+  }
+
+  function refreshData() {
+    callGASRead({ action:"getAllProgress" }).then(res => {
+      if (res && res.result) DST.allProgress = res.result;
+      renderOverview();
+      renderProgresTab();
+      renderProgTable();
+    });
+    PARTIES.forEach(p => {
+      callGASRead({ action:"getMembers", kelompok: p.key }).then(res => {
+        if (res && res.result && res.result.length) {
+          DST.allMembers[p.key] = res.result;
+          localStorage.setItem("dosen_members_" + p.key, JSON.stringify(res.result));
+        }
+      });
+    });
+  }
+
+  function blankMembers() {
+    return Array.from({ length: 5 }, () => ({ nim:"", nama:"", kelas:"TI A", jobdesk:"" }));
+  }
+
+  function defaultCriteria() {
+    return {
+      tugas: [
+        { label:"Kelengkapan laporan progres mingguan", persen:20 },
+        { label:"Konsistensi commit GitHub",             persen:10 },
+        { label:"Kualitas deskripsi pekerjaan",          persen:10 }
+      ],
+      uts: [
+        { label:"Kelengkapan fitur mid-project",          persen:15 },
+        { label:"Kerjasama tim & pembagian tugas merata", persen:10 }
+      ],
+      uas: [
+        { label:"Gameplay dapat dimainkan end-to-end",  persen:20 },
+        { label:"Kreativitas dan originalitas cerita",  persen:10 },
+        { label:"Kualitas aset visual & audio",         persen:5  }
+      ]
+    };
+  }
+
+  /* ── OVERVIEW ── */
+  function renderOverview() {
+    const totalM = PARTIES.reduce((s, p) =>
+      s + (DST.allMembers[p.key]||[]).filter(m => m.nama).length, 0);
+    const avgAll = calcAvgAll();
+
+    document.getElementById("statGrid").innerHTML = `
+      <div class="stat-card">
+        <div class="stat-num" style="color:#FFD700">${PARTIES.length}</div>
+        <div class="stat-lbl">Total Kelompok</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:#3498db">${totalM}</div>
+        <div class="stat-lbl">Mahasiswa Terdaftar</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:#27ae60">${DST.allProgress.length}</div>
+        <div class="stat-lbl">Laporan Masuk</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:${avgAll>=75?"#27ae60":avgAll>=40?"#f39c12":"#c0392b"}">${Math.round(avgAll)}%</div>
+        <div class="stat-lbl">Avg Progres</div>
+      </div>`;
+
+    const weeks = ["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];
+    document.getElementById("overviewCards").innerHTML = PARTIES.map(p => {
+      const logs    = DST.allProgress.filter(l => l.kelompok === p.key);
+      const avg     = calcAvg(logs);
+      const members = (DST.allMembers[p.key]||[]).filter(m => m.nama);
+      const wCount  = weeks.map(w => logs.filter(l => l.minggu === w).length);
+      const avgClr  = avg >= 75 ? "#27ae60" : avg >= 40 ? "#f39c12" : "#c0392b";
+      return `<div class="party-card" style="border-left:3px solid ${p.color}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div>
+            <span style="color:${p.color};font-size:13px;font-weight:bold">${p.key}</span>
+            <span style="color:#555;font-size:11px;margin-left:6px">— ${p.label}</span>
+          </div>
+          <span style="color:${avgClr};font-size:15px;font-weight:bold">${Math.round(avg)}%</span>
+        </div>
+        <div class="pbar-wrap"><div class="pbar-fill" style="width:${Math.round(avg)}%;background:${p.color}"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;flex-wrap:wrap;gap:4px">
+          ${weeks.map((w,i) => `<span style="color:${wCount[i]>0?"#27ae60":"#444"}">${w}: <b>${wCount[i]}</b> laporan</span>`).join("")}
+        </div>
+        <div style="margin-top:5px;font-size:10px;color:#555">${members.length} anggota terdaftar</div>
+      </div>`;
+    }).join("");
+  }
+
+  function calcAvgAll() {
+    if (!DST.allProgress.length) return 0;
+    const v = DST.allProgress.map(l => parseInt((l.progres||"0").replace("%",""))||0);
+    return v.reduce((a,b) => a+b, 0) / v.length;
+  }
+
+  function calcAvg(logs) {
+    if (!logs.length) return 0;
+    const v = logs.map(l => parseInt((l.progres||"0").replace("%",""))||0);
+    return v.reduce((a,b) => a+b, 0) / v.length;
+  }
+
+  /* ── DATA ANGGOTA ── */
+  function renderAnggotaForm() {
+    const kelompok = document.getElementById("kelompokSel").value;
+    if (!DST.allMembers[kelompok]) DST.allMembers[kelompok] = blankMembers();
+    const members = DST.allMembers[kelompok];
+    const p = PARTIES.find(x => x.key === kelompok);
+
+    document.getElementById("anggotaFormArea").innerHTML = `
+      <div class="box">
+        <div style="color:${p.color};font-size:12px;font-weight:bold;margin-bottom:12px">${p.key} — ${p.label}</div>
+        <div class="anggota-header-row" style="margin-bottom:6px">
+          <div></div>
+          <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px">NIM</div>
+          <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px">Nama Lengkap</div>
+          <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px">Kelas</div>
+          <div class="jobdesk-lbl" style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px">Jobdesk (opsional)</div>
+          <div></div>
+        </div>
+        ${members.map((m, i) => `
+          <div class="anggota-data-row">
+            <div style="color:${p.color};font-size:11px;font-weight:bold;text-align:center">${i+1}</div>
+            <input class="m-inp" placeholder="NIM" value="${m.nim||""}"
+              oninput="DST.allMembers['${kelompok}'][${i}].nim=this.value">
+            <input class="m-inp" placeholder="Nama lengkap" value="${m.nama||""}"
+              oninput="DST.allMembers['${kelompok}'][${i}].nama=this.value">
+            <select class="m-sel" onchange="DST.allMembers['${kelompok}'][${i}].kelas=this.value">
+              <option value="TI A" ${(m.kelas||"TI A")==="TI A"?"selected":""}>TI A</option>
+              <option value="TI B" ${m.kelas==="TI B"?"selected":""}>TI B</option>
+            </select>
+            <input class="m-inp jobdesk-col" placeholder="Biarkan kosong agar dipilih mahasiswa" value="${m.jobdesk||""}"
+              oninput="DST.allMembers['${kelompok}'][${i}].jobdesk=this.value">
+            <button class="btn-del" onclick="clearRow('${kelompok}',${i})">&#x2715;</button>
+          </div>`).join("")}
+      </div>`;
+  }
+
+  function clearRow(kelompok, idx) {
+    DST.allMembers[kelompok][idx] = { nim:"", nama:"", kelas:"TI A", jobdesk:"" };
+    renderAnggotaForm();
+  }
+
+  function simpanAnggota() {
+    const kelompok = document.getElementById("kelompokSel").value;
+    const members  = DST.allMembers[kelompok] || [];
+    const valid    = members.filter(m => m.nama || m.nim);
+    if (!valid.length) {
+      document.getElementById("anggotaErr").textContent = "Isi minimal 1 data anggota!";
+      return;
+    }
+    document.getElementById("anggotaErr").textContent = "";
+    localStorage.setItem("dosen_members_" + kelompok, JSON.stringify(members));
+    callGAS({ action:"saveMembers", kelompok, members });
+    document.getElementById("anggotaOk").textContent = "Data anggota " + kelompok + " berhasil disimpan!";
+    setTimeout(() => document.getElementById("anggotaOk").textContent = "", 3000);
+    renderOverview();
+  }
+
+  /* ── TRACKING PROGRES ── */
+  function renderProgresTab() {
+    const tabs = document.getElementById("progPartyTabs");
+    const makeActive = (el, clr) => {
+      el.style.background   = clr;
+      el.style.color        = "#fff";
+      el.style.borderColor  = clr;
+    };
+    tabs.innerHTML = `<button class="pt" onclick="filterProg('semua',this)">Semua</button>` +
+      PARTIES.map(p =>
+        `<button class="pt" onclick="filterProg('${p.key}',this)" data-color="${p.color}">${p.key}</button>`
+      ).join("");
+
+    const semua = tabs.querySelector(".pt");
+    if (DST.filterKelompok === "semua") makeActive(semua, "#c0392b");
+    tabs.querySelectorAll(".pt[data-color]").forEach(btn => {
+      if (btn.textContent.trim() === DST.filterKelompok)
+        makeActive(btn, btn.dataset.color);
+    });
+    renderProgTable();
+  }
+
+  function filterProg(kelompok, btn) {
+    DST.filterKelompok = kelompok;
+    document.querySelectorAll(".pt").forEach(b => {
+      b.style.background = ""; b.style.color = ""; b.style.borderColor = "";
+    });
+    const clr = kelompok === "semua" ? "#c0392b"
+      : (PARTIES.find(p => p.key === kelompok)||{}).color || "#888";
+    btn.style.background = clr;
+    btn.style.color      = "#fff";
+    btn.style.borderColor= clr;
+    renderProgTable();
+  }
+
+  function renderProgTable() {
+    const logs = DST.filterKelompok === "semua"
+      ? DST.allProgress
+      : DST.allProgress.filter(l => l.kelompok === DST.filterKelompok);
+
+    const weeks = ["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];
+    const grouped = {};
+    logs.forEach(l => {
+      const key = l.kelompok + "||" + (l.nim || l.nama);
+      if (!grouped[key]) grouped[key] = { kelompok:l.kelompok, nim:l.nim||"", nama:l.nama, role:l.role, weeks:{} };
+      grouped[key].weeks[l.minggu] = parseInt((l.progres||"0").replace("%",""))||0;
+    });
+
+    const rows   = Object.values(grouped);
+    const tbody  = document.getElementById("progBody");
+    const pcolor = Object.fromEntries(PARTIES.map(p => [p.key, p.color]));
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#444;padding:1.5rem">
+        Belum ada laporan masuk${DST.filterKelompok!=="semua"?" untuk "+DST.filterKelompok:""}.
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const clr    = pcolor[r.kelompok] || "#888";
+      const wVals  = weeks.map(w => r.weeks[w] !== undefined ? r.weeks[w] : null);
+      const filled = wVals.filter(v => v !== null);
+      const avg    = filled.length ? Math.round(filled.reduce((a,b)=>a+b,0)/filled.length) : 0;
+      const ac     = avg >= 75 ? "#27ae60" : avg >= 40 ? "#f39c12" : "#c0392b";
+      return `<tr>
+        <td><span style="color:${clr};font-weight:bold;font-size:11px">${r.kelompok}</span></td>
+        <td style="font-size:11px;color:#888">${r.nim||"—"}</td>
+        <td style="color:#ddd">${r.nama||"—"}</td>
+        <td style="color:#888;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.role||"—"}</td>
+        ${wVals.map(v => v !== null
+          ? `<td><div class="pbar-mini"><div class="pbar-mini-fill" style="width:${v}%;background:${v>=75?"#27ae60":v>=40?"#f39c12":"#c0392b"}"></div></div><span style="font-size:11px">${v}%</span></td>`
+          : `<td style="color:#333;font-size:11px">—</td>`
+        ).join("")}
+        <td><span style="color:${ac};font-weight:bold;font-size:12px">${avg}%</span></td>
+      </tr>`;
+    }).join("");
+  }
+
+  /* ── KRITERIA PENILAIAN ── */
+  function renderKriteriaTab() {
+    document.getElementById("kriteriaArea").innerHTML =
+      ["tugas","uts","uas"].map(tipe => {
+        const cfg  = TIPE_CONFIG[tipe];
+        const subs = DST.criteria[tipe] || [];
+        return `<div class="krit-box">
+          <div class="krit-header">
+            <div style="color:${cfg.color};font-size:13px;font-weight:bold">${cfg.label}</div>
+            <button class="btn btn-sec btn-sm" onclick="addKrit('${tipe}')">+ Tambah Sub Kriteria</button>
+          </div>
+          ${subs.length === 0
+            ? `<div style="color:#444;font-size:11px;padding:4px 0">Belum ada sub kriteria. Klik "+ Tambah".</div>`
+            : subs.map((s, i) => `
+              <div class="krit-row">
+                <input class="m-inp" placeholder="Nama sub kriteria..." value="${s.label||""}"
+                  oninput="DST.criteria['${tipe}'][${i}].label=this.value">
+                <div style="display:flex;align-items:center;gap:5px">
+                  <input class="m-inp" type="number" min="0" max="100" style="width:58px;text-align:center"
+                    value="${s.persen||""}"
+                    oninput="DST.criteria['${tipe}'][${i}].persen=+this.value;updateTotal()">
+                  <span style="color:#666;font-size:12px">%</span>
+                </div>
+                <button class="btn-del" onclick="removeKrit('${tipe}',${i})">&#x2715;</button>
+              </div>`).join("")}
+        </div>`;
+      }).join("");
+    updateTotal();
+  }
+
+  function addKrit(tipe) {
+    DST.criteria[tipe].push({ label:"", persen:0 });
+    renderKriteriaTab();
+  }
+
+  function removeKrit(tipe, idx) {
+    DST.criteria[tipe].splice(idx, 1);
+    renderKriteriaTab();
+  }
+
+  function updateTotal() {
+    let total = 0;
+    ["tugas","uts","uas"].forEach(t => {
+      (DST.criteria[t]||[]).forEach(s => { total += parseInt(s.persen)||0; });
+    });
+    total = Math.min(total, 999);
+    const elNum = document.getElementById("totalPersen");
+    const elSt  = document.getElementById("totalStatus");
+    if (elNum) {
+      elNum.textContent = total + "%";
+      elNum.style.color = total === 100 ? "#27ae60" : total > 100 ? "#c0392b" : "#FFD700";
+    }
+    if (elSt) {
+      elSt.textContent = total === 100 ? "Total sudah tepat 100% ✓"
+        : total > 100 ? "Melebihi 100%! Kurangi bobot."
+        : "Belum mencapai 100%";
+      elSt.style.color = total === 100 ? "#27ae60" : total > 100 ? "#c0392b" : "#888";
+    }
+  }
+
+  function simpanKriteria() {
+    let total = 0;
+    ["tugas","uts","uas"].forEach(t => {
+      (DST.criteria[t]||[]).forEach(s => { total += parseInt(s.persen)||0; });
+    });
+    if (total !== 100) {
+      document.getElementById("kriteriaOk").style.color = "#ff4c4c";
+      document.getElementById("kriteriaOk").textContent = "Total bobot harus 100%! Sekarang: " + total + "%";
+      return;
+    }
+    localStorage.setItem("dosen_criteria", JSON.stringify(DST.criteria));
+    callGAS({ action:"saveCriteria", criteria: DST.criteria });
+    document.getElementById("kriteriaOk").style.color   = "#4cff4c";
+    document.getElementById("kriteriaOk").textContent   = "Kriteria penilaian berhasil disimpan!";
+    setTimeout(() => document.getElementById("kriteriaOk").textContent = "", 3000);
+  }
+</script>
+</body>
+</html>
