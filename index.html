@@ -316,17 +316,52 @@ function selectWeek(week,idx,btn){
 function updBar(val,clr){const p=Math.min(100,Math.max(0,parseInt(val)||0));document.getElementById("progBar").style.width=p+"%";}
 
 function submitLog(week,idx){
-  const pct=(document.getElementById("inpPct").value||"").trim();const detail=(document.getElementById("inpDetail").value||"").trim();
-  const errEl=document.getElementById("subErr");const okEl=document.getElementById("subOk");
+  const pct   =(document.getElementById("inpPct").value||"").trim();
+  const detail=(document.getElementById("inpDetail").value||"").trim();
+  const errEl =document.getElementById("subErr");
+  const okEl  =document.getElementById("subOk");
+  const btn   =document.querySelector("#weekArea .btn");
   if(!pct){errEl.textContent="Isi persentase progres!";return;}
-  errEl.textContent="";okEl.textContent="Mengirim laporan...";
-  const ts=new Date().toLocaleString("id-ID");
-  if(!ST.logs[idx])ST.logs[idx]={};
-  ST.logs[idx][week]={progres:pct,detail,timestamp:ts};saveLocal();
+  errEl.textContent="";
+  okEl.style.color="var(--gold)";
+  okEl.textContent="Mengirim laporan...";
+  if(btn)btn.disabled=true;
+
   const m=ST.members[idx];
-  callGAS({action:"saveProgress",payload:{kelompok:ST.party.guild,minggu:week,nim:m.nim,nama:m.nama,role:m.jobdesk,progres:pct,github:"-",detail}});
-  renderMemberGrid();renderWeekTabs(idx);
-  const ab=document.querySelector(`.wt[data-week="${week}"]`);if(ab)selectWeek(week,idx,ab);
+  const ts=new Date().toLocaleString("id-ID");
+
+  // Simpan lokal dulu agar UI langsung update
+  if(!ST.logs[idx])ST.logs[idx]={};
+  ST.logs[idx][week]={progres:pct,detail,timestamp:ts};
+  saveLocal();
+
+  const payload={
+    action:"saveProgress",
+    payload:{kelompok:ST.party.guild,minggu:week,nim:m.nim,nama:m.nama,role:m.jobdesk,progres:pct,detail}
+  };
+
+  // Kirim ke GAS via GET agar bisa baca response
+  const params=new URLSearchParams({data:JSON.stringify(payload)});
+  fetch(GAS_URL+"?"+params.toString(),{method:"GET",redirect:"follow"})
+    .then(r=>r.json())
+    .then(res=>{
+      okEl.style.color="var(--a3)";
+      okEl.textContent= res&&res.status==="error" ? "Tersimpan! ("+res.message+")" : "Laporan Quest berhasil dikirim!";
+      if(btn)btn.disabled=false;
+      renderMemberGrid();renderWeekTabs(idx);
+      const ab=document.querySelector('.wt[data-week="'+week+'"]');
+      if(ab)selectWeek(week,idx,ab);
+    })
+    .catch(()=>{
+      // Fallback no-cors
+      fetch(GAS_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(payload)}).catch(()=>{});
+      okEl.style.color="var(--a3)";
+      okEl.textContent="Tersimpan lokal. Akan tersinkron saat ada koneksi.";
+      if(btn)btn.disabled=false;
+      renderMemberGrid();renderWeekTabs(idx);
+      const ab=document.querySelector('.wt[data-week="'+week+'"]');
+      if(ab)selectWeek(week,idx,ab);
+    });
 }
 
 function exportPDF(){
