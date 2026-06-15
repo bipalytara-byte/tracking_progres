@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { background-color: #2C2F33; color: #FFFFFF; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 20px; }
+    .card { background-color: #23272A; border: 2px solid #FFD700; border-radius: 10px; padding: 30px; max-width: 500px; margin: 40px auto; box-shadow: 0px 0px 15px #FFD700; }
+    input, select, textarea { width: 90%; padding: 12px; margin: 10px 0; background-color: #2C2F33; color: #FFF; border: 1px solid #FFD700; border-radius: 5px; box-sizing: border-box; }
+    button { background-color: #FFD700; color: #000; padding: 12px 25px; font-weight: bold; font-family: inherit; border: none; cursor: pointer; border-radius: 5px; font-size: 16px; margin-top: 15px; width: 90%;}
+    button:hover { background-color: #FFA500; }
+    #formSection { display: none; }
+    .label-text { text-align: left; width: 90%; display: block; margin: auto; font-size: 14px; color: #ccc; }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="loginSection">
+    <h2>🎮 PORTAL GUILD LOGIN 🎮</h2>
+    <p>Masukkan Kode Party Anda untuk melanjutkan:</p>
+    <input type="text" id="kodeInput" placeholder="Contoh: PARTY1-MV">
+    <button onclick="checkCode()">Akses Portal</button>
+    <p id="loginPesan" style="color: #ff4c4c; margin-top: 15px;"></p>
+  </div>
+
+  <div class="card" id="formSection">
+    <h2 id="judulKelompok" style="color: #FFD700;">QUEST LOG</h2>
+    <p>Laporkan progres pengembangan RPG Maker MV kelompok Anda.</p>
+    <input type="hidden" id="kelompokAktif">
+    
+    <span class="label-text">Pilih Minggu:</span>
+    <select id="minggu">
+      <option value="Minggu 1">Minggu 1</option>
+      <option value="Minggu 2">Minggu 2</option>
+      <option value="Minggu 3">Minggu 3</option>
+      <option value="Minggu 4">Minggu 4</option>
+    </select>
+    
+    <input type="text" id="nama" placeholder="Nama Anggota (Contoh: Budi)">
+    <input type="text" id="role" placeholder="Jobdesk (Contoh: Eventer / Mapper)">
+    <input type="number" id="progres" placeholder="Progres Penyelesaian (%)" min="0" max="100">
+    <input type="url" id="github" placeholder="Tautan Commit GitHub (Wajib)">
+    <textarea id="detail" rows="4" placeholder="Detail pekerjaan mandiri yang diselesaikan pada minggu ini..."></textarea>
+    
+    <button onclick="submitData()">Kirim Laporan Progres</button>
+    <p id="statusPesan" style="margin-top: 15px; font-weight: bold;"></p>
+  </div>
+
+  <script>
+    function checkCode() {
+      var kode = document.getElementById("kodeInput").value.trim();
+      document.getElementById("loginPesan").innerText = "Memeriksa akses kredenisal...";
+      
+      google.script.run.withSuccessHandler(function(result) {
+        if(result) {
+          document.getElementById("loginSection").style.display = "none";
+          document.getElementById("formSection").style.display = "block";
+          document.getElementById("judulKelompok").innerText = "QUEST LOG: " + result.toUpperCase();
+          document.getElementById("kelompokAktif").value = result;
+        } else {
+          document.getElementById("loginPesan").innerText = "Akses ditolak. Kode Party tidak valid.";
+        }
+      }).verifyCode(kode);
+    }
+
+    function submitData() {
+      var btn = document.querySelector("#formSection button");
+      var tautanGithub = document.getElementById("github").value.trim();
+      
+      if(tautanGithub === "") {
+        document.getElementById("statusPesan").innerText = "Peringatan: Tautan Commit GitHub wajib diisi!";
+        document.getElementById("statusPesan").style.color = "#ff4c4c";
+        return;
+      }
+
+      btn.disabled = true;
+      document.getElementById("statusPesan").style.color = "#FFF";
+      document.getElementById("statusPesan").innerText = "Mentransmisikan data...";
+      
+      var data = {
+        kelompok: document.getElementById("kelompokAktif").value,
+        minggu: document.getElementById("minggu").value,
+        nama: document.getElementById("nama").value,
+        role: document.getElementById("role").value,
+        progres: document.getElementById("progres").value,
+        github: tautanGithub,
+        detail: document.getElementById("detail").value
+      };
+
+      google.script.run.withSuccessHandler(function(sukses) {
+        if(sukses) {
+          document.getElementById("statusPesan").style.color = "#4cff4c";
+          document.getElementById("statusPesan").innerText = "Laporan berhasil terekam ke pusat komando!";
+          document.getElementById("nama").value = "";
+          document.getElementById("role").value = "";
+          document.getElementById("progres").value = "";
+          document.getElementById("github").value = "";
+          document.getElementById("detail").value = "";
+          btn.disabled = false;
+        }
+      }).saveProgress(data);
+    }
+  </script>
+</body>
+</html>
