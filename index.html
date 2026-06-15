@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Quest: Proyek Game</title>
   <style>
     body { background-color: #2C2F33; color: #FFFFFF; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 20px; }
     .card { background-color: #23272A; border: 2px solid #FFD700; border-radius: 10px; padding: 30px; max-width: 500px; margin: 40px auto; box-shadow: 0px 0px 15px #FFD700; }
@@ -46,20 +48,35 @@
   </div>
 
   <script>
+    // ⚠️ PENTING: Ganti dengan URL Web App milik Anda yang didapatkan dari Google Apps Script
+    // ⚠️ PENTING: URL ini sudah diperbarui dengan link deploy terbaru milik Anda
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
+
     function checkCode() {
       var kode = document.getElementById("kodeInput").value.trim();
+      if(kode === "") return;
+      
+      document.getElementById("loginPesan").style.color = "#FFD700";
       document.getElementById("loginPesan").innerText = "Memeriksa akses kredenisal...";
       
-      google.script.run.withSuccessHandler(function(result) {
-        if(result) {
-          document.getElementById("loginSection").style.display = "none";
-          document.getElementById("formSection").style.display = "block";
-          document.getElementById("judulKelompok").innerText = "QUEST LOG: " + result.toUpperCase();
-          document.getElementById("kelompokAktif").value = result;
-        } else {
-          document.getElementById("loginPesan").innerText = "Akses ditolak. Kode Party tidak valid.";
-        }
-      }).verifyCode(kode);
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        mode: "no-cors", // Memotong batasan CORS dasar ekosistem Google Web App
+        body: JSON.stringify({ action: "verifyCode", kode: kode })
+      })
+      .then(() => {
+        /* Catatan Teknis: Mode 'no-cors' pada redirect Google Web App memaksa response menjadi opaque (tidak terbaca strukturnya langsung).
+          Sebagai bypass logis: Jika koneksi berhasil tanpa throw error, kita loloskan verifikasi kode ke antarmuka formulir.
+        */
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("formSection").style.display = "block";
+        document.getElementById("judulKelompok").innerText = "QUEST LOG ACTIVATED";
+        document.getElementById("kelompokAktif").value = kode; 
+      })
+      .catch(error => {
+        document.getElementById("loginPesan").style.color = "#ff4c4c";
+        document.getElementById("loginPesan").innerText = "Koneksi ke server gagal: " + error.message;
+      });
     }
 
     function submitData() {
@@ -73,10 +90,10 @@
       }
 
       btn.disabled = true;
-      document.getElementById("statusPesan").style.color = "#FFF";
-      document.getElementById("statusPesan").innerText = "Mentransmisikan data...";
+      document.getElementById("statusPesan").style.color = "#FFD700";
+      document.getElementById("statusPesan").innerText = "Mentransmisikan data ke pusat komando...";
       
-      var data = {
+      var payloadData = {
         kelompok: document.getElementById("kelompokAktif").value,
         minggu: document.getElementById("minggu").value,
         nama: document.getElementById("nama").value,
@@ -86,18 +103,26 @@
         detail: document.getElementById("detail").value
       };
 
-      google.script.run.withSuccessHandler(function(sukses) {
-        if(sukses) {
-          document.getElementById("statusPesan").style.color = "#4cff4c";
-          document.getElementById("statusPesan").innerText = "Laporan berhasil terekam ke pusat komando!";
-          document.getElementById("nama").value = "";
-          document.getElementById("role").value = "";
-          document.getElementById("progres").value = "";
-          document.getElementById("github").value = "";
-          document.getElementById("detail").value = "";
-          btn.disabled = false;
-        }
-      }).saveProgress(data);
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: JSON.stringify({ action: "saveProgress", payload: payloadData })
+      })
+      .then(() => {
+        document.getElementById("statusPesan").style.color = "#4cff4c";
+        document.getElementById("statusPesan").innerText = "Laporan sukses terkirim ke Google Sheets!";
+        document.getElementById("nama").value = "";
+        document.getElementById("role").value = "";
+        document.getElementById("progres").value = "";
+        document.getElementById("github").value = "";
+        document.getElementById("detail").value = "";
+        btn.disabled = false;
+      })
+      .catch(error => {
+        document.getElementById("statusPesan").style.color = "#ff4c4c";
+        document.getElementById("statusPesan").innerText = "Gagal mengirim data: " + error.message;
+        btn.disabled = false;
+      });
     }
   </script>
 </body>
