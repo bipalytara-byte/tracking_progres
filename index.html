@@ -99,7 +99,14 @@
     <button class="btn btn-fire" onclick="doLogin()">&#x25B6; Akses Portal</button>
     <div class="err" id="loginErr"></div>
     <hr class="rpg-divider" style="margin:1.25rem 0">
-    <div style="color:var(--ink3);font-size:13px;text-align:center">Belum punya kode? Hubungi dosen Anda.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="color:var(--ink3);font-size:13px">Belum punya kode? Hubungi dosen Anda.</div>
+      <a href="dosen.html" style="color:var(--ink3);font-size:13px;font-weight:700;text-decoration:none;border:2px solid var(--border);border-radius:8px;padding:6px 14px;font-family:'Nunito',sans-serif;display:inline-block"
+        onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--ink)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--ink3)'">
+        &#x1F393; Login Dosen
+      </a>
+    </div>
   </div>
 </div>
 
