@@ -6,24 +6,31 @@
   <title>Portal Quest — Guild Leaderboard</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0d0e0f;color:#fff;font-family:'Courier New',monospace;min-height:100vh;padding:1.5rem}
+    :root{--parch:#f5eed8;--parch2:#ede2c0;--parch3:#d4c49a;--ink:#2c1810;--ink2:#4a3020;--ink3:#6b4c30;--a1:#e8534a;--a2:#4a90d9;--a3:#52b788;--a4:#f4a261;--a5:#9b59b6;--gold:#c9982a;--border:#b89a6a;--border2:#8b6a3a;}
+    body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;min-height:100vh;padding:1.5rem}
     .wrap{max-width:680px;margin:0 auto}
-    .sec-lbl{font-size:10px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+    .rpg-h1{font-family:'Cinzel',serif;font-size:20px;font-weight:700;letter-spacing:2px}
+    .sec-lbl{font-family:'Cinzel',serif;font-size:11px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
     .tab-row{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
-    .tab-btn{padding:6px 14px;background:#111316;color:#888;border:1px solid #333;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
-    .tab-btn.active{background:#FFD700;color:#000;border-color:#FFD700;font-weight:bold}
-    .lb-row{display:flex;align-items:center;gap:12px;background:#111316;border:1px solid #222;border-radius:10px;padding:12px 14px;margin-bottom:8px}
-    .lb-row.rank-1{border-color:#FFD700}
+    .tab-btn{padding:7px 16px;background:var(--parch3);color:var(--ink3);border:2px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+    .tab-btn.active{background:var(--gold);color:#fff;border-color:var(--gold)}
+    .lb-row{display:flex;align-items:center;gap:12px;background:var(--parch2);border:2px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;transition:border-color .15s}
+    .lb-row.rank-1{border-color:var(--gold)}
     .lb-row.rank-2{border-color:#aaa}
     .lb-row.rank-3{border-color:#cd7f32}
-    .lb-bar-wrap{height:5px;background:#222;border-radius:3px;flex:1}
+    .lb-bar-wrap{height:7px;background:var(--parch3);border-radius:4px;flex:1;border:1px solid var(--border)}
     .lb-bar-fill{height:100%;border-radius:3px;transition:width .5s}
     .badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
-    .badge-card{background:#111316;border:1px solid #222;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+    .badge-card{background:var(--parch2);border:2px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px}
     .badge-card.locked{opacity:.4}
-    .back-link{color:#555;font-size:11px;text-decoration:none;font-family:'Courier New',monospace;display:inline-flex;align-items:center;gap:4px;margin-bottom:1.25rem}
-    .back-link:hover{color:#FFD700}
-    .divider{border:none;border-top:1px solid #1a1a1a;margin:1.25rem 0}
+    .back-link{color:var(--ink3);font-size:13px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:1.25rem;font-family:'Nunito',sans-serif}
+    .back-link:hover{color:var(--gold)}
+    .divider{border:none;border-top:2px solid var(--border);margin:1.25rem 0}
+    .footer-links{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+    .footer-link{color:var(--ink3);font-size:13px;font-weight:700;text-decoration:none;border:2px solid var(--border);border-radius:8px;padding:7px 16px;display:inline-block;font-family:'Nunito',sans-serif}
+    .footer-link:hover{color:var(--ink);border-color:var(--gold)}
+    .xp-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--parch3)}
+    .lv-row{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--parch3)}
   </style>
 </head>
 <body>
@@ -76,7 +83,7 @@
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4lpJM4NaX18C9lCfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
 
   const PARTIES = [
     { key:"Kelompok 1", color:"#e74c3c", label:"Iron Vanguard",  el:"fire",    kode:"PARTY1-MV" },

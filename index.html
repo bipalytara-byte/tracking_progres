@@ -3,653 +3,338 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Quest: Proyek Game RPG</title>
+  <title>Portal Quest — RPG Maker MV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0d0e0f;color:#fff;font-family:'Courier New',monospace;min-height:100vh;padding:1.5rem}
+    :root{
+      --parch:#f5eed8;--parch2:#ede2c0;--parch3:#d4c49a;
+      --ink:#2c1810;--ink2:#4a3020;--ink3:#6b4c30;
+      --a1:#e8534a;--a2:#4a90d9;--a3:#52b788;--a4:#f4a261;--a5:#9b59b6;
+      --gold:#c9982a;--border:#b89a6a;--border2:#8b6a3a;
+    }
+    body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;min-height:100vh;padding:1.5rem}
     .screen{display:none}.screen.active{display:block}
-    .rpg-card{background:#1a1c1e;border:1.5px solid #FFD700;border-radius:12px;padding:2rem;max-width:460px;margin:0 auto}
-    .rpg-title{color:#FFD700;font-size:17px;font-weight:bold;text-align:center;margin-bottom:4px;letter-spacing:2px;text-transform:uppercase}
-    .rpg-sub{color:#888;font-size:12px;text-align:center;margin-bottom:1.5rem}
-    .rpg-input{width:100%;padding:11px 13px;background:#0d0e0f;color:#fff;border:1px solid #444;border-radius:8px;font-family:'Courier New',monospace;font-size:13px;margin-bottom:10px;outline:none}
-    .rpg-input:focus{border-color:#FFD700}
-    .rpg-btn{width:100%;padding:11px;background:#FFD700;color:#000;font-family:'Courier New',monospace;font-weight:bold;font-size:13px;border:none;border-radius:8px;cursor:pointer;letter-spacing:1px;margin-top:4px}
-    .rpg-btn:hover{background:#FFA500}
-    .rpg-btn.sec{background:transparent;color:#FFD700;border:1px solid #FFD700;margin-top:8px}
-    .rpg-btn.sec:hover{background:rgba(255,215,0,0.08)}
-    .rpg-btn.sm{width:auto;padding:7px 16px;font-size:12px;margin-top:0}
-    .err{color:#ff4c4c;font-size:12px;text-align:center;margin-top:8px;min-height:16px}
-    .ok{color:#4cff4c;font-size:12px;text-align:center;margin-top:8px;min-height:16px}
-    .back-link{color:#888;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:1rem}
-    .back-link:hover{color:#FFD700}
-    .section-lbl{font-size:10px;color:#666;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
-    .divider{border:none;border-top:1px solid #222;margin:1rem 0}
-
-    /* Role selector */
-    .role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px}
-    .role-chip{background:#111316;border:1px solid #333;border-radius:20px;padding:7px 12px;font-size:11px;color:#aaa;cursor:pointer;text-align:center;font-family:'Courier New',monospace;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .role-chip:hover{border-color:#FFD700;color:#FFD700}
-    .role-chip.selected{background:rgba(255,215,0,0.12);border-color:#FFD700;color:#FFD700;font-weight:bold}
-    .role-chip.other-chip{border-style:dashed;color:#888}
-    .role-chip.other-chip.selected{border-style:solid}
-    .custom-role-wrap{display:none;margin-bottom:10px}
-    .custom-role-wrap.show{display:block}
-
-    /* Party screen */
-    .party-wrap{max-width:560px;margin:0 auto}
-    .party-header{text-align:center;margin-bottom:1.25rem}
-    .char-sprite{width:88px;height:88px;margin:0 auto 10px;display:block}
-    .party-name{color:#FFD700;font-size:18px;font-weight:bold;letter-spacing:2px}
-    .party-class{color:#888;font-size:11px;margin-top:3px}
-    .tab-row{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
-    .tab-btn{padding:6px 14px;background:#111316;color:#888;border:1px solid #333;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
-    .tab-btn.active{background:#FFD700;color:#000;border-color:#FFD700;font-weight:bold}
-    .member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:9px;margin-bottom:1rem}
-    .member-card{background:#111316;border:1px solid #333;border-radius:10px;padding:11px 9px;cursor:pointer;text-align:center;transition:border-color .15s}
-    .member-card:hover{border-color:#FFD700}
-    .member-card:hover .mc-name{color:#FFD700}
-    .mc-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;margin:0 auto 7px;font-weight:bold}
-    .mc-nim{font-size:10px;color:#666;margin-bottom:2px}
-    .mc-name{font-size:12px;color:#ddd;font-weight:bold;margin-bottom:3px}
-    .mc-role{font-size:10px;color:#FFD700;margin-bottom:2px}
-    .mc-kelas{font-size:10px;color:#777}
-    .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px}
-    .badge-green{background:rgba(76,255,76,0.1);color:#4cff4c;border:1px solid rgba(76,255,76,0.2)}
-    .badge-gold{background:rgba(255,215,0,0.1);color:#FFD700;border:1px solid rgba(255,215,0,0.2)}
-    .badge-gray{background:rgba(255,255,255,0.05);color:#888;border:1px solid #333}
-
-    /* Progress screen */
-    .prog-wrap{max-width:500px;margin:0 auto}
-    .prog-header{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem}
-    .prog-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;flex-shrink:0}
+    .wrap{max-width:560px;margin:0 auto}
+    .rpg-h1{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--ink);letter-spacing:2px}
+    .rpg-h2{font-family:'Cinzel',serif;font-size:17px;font-weight:600;color:var(--ink2)}
+    .rpg-h3{font-family:'Cinzel',serif;font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px}
+    .parch-card{background:var(--parch2);border:2px solid var(--border);border-radius:12px;padding:1.75rem;position:relative;max-width:460px;margin:2rem auto}
+    .parch-card::before{content:'';position:absolute;inset:5px;border:1px solid var(--border2);border-radius:8px;pointer-events:none}
+    .box{background:var(--parch2);border:2px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px}
+    .rpg-input{width:100%;background:var(--parch);color:var(--ink);border:2px solid var(--border);border-radius:8px;padding:11px 14px;font-family:'Nunito',sans-serif;font-size:15px;outline:none;margin-bottom:10px}
+    .rpg-input:focus{border-color:var(--a2)}
+    textarea.rpg-input{resize:vertical}
+    .btn{font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;border:none;border-radius:8px;cursor:pointer;padding:11px 20px;width:100%;margin-top:4px;letter-spacing:.3px;transition:transform .1s}
+    .btn:active{transform:scale(.97)}
+    .btn-fire{background:var(--a1);color:#fff;border-bottom:3px solid #b03228}.btn-fire:hover{background:#f06058}
+    .btn-sky{background:var(--a2);color:#fff;border-bottom:3px solid #2e6ca8}.btn-sky:hover{background:#5a9fe0}
+    .btn-gold{background:var(--gold);color:#fff;border-bottom:3px solid #9a7018}.btn-gold:hover{background:#d4a832}
+    .btn-ghost{background:transparent;color:var(--ink2);border:2px solid var(--border2);margin-top:6px}.btn-ghost:hover{background:var(--parch3)}
+    .tab-row{display:flex;gap:4px;margin-bottom:0;flex-wrap:wrap}
+    .rpg-tab{padding:8px 16px;background:var(--parch3);color:var(--ink3);border:2px solid var(--border);border-radius:8px 8px 0 0;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border-bottom:none}
+    .rpg-tab.active{background:var(--parch2);color:var(--ink);border-bottom:2px solid var(--parch2)}
+    .tab-content{background:var(--parch2);border:2px solid var(--border);border-radius:0 8px 8px 8px;padding:1rem;margin-bottom:1rem}
+    .member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:9px;margin-bottom:1rem}
+    .member-card{background:var(--parch);border:2px solid var(--border);border-radius:10px;padding:12px 10px;cursor:pointer;text-align:center;transition:border-color .15s,transform .1s}
+    .member-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+    .mc-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;margin:0 auto 7px;font-weight:800}
+    .mc-nim{font-size:11px;color:var(--ink3);margin-bottom:2px}
+    .mc-name{font-size:13px;color:var(--ink);font-weight:700;margin-bottom:3px}
+    .mc-role{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:2px}
+    .mc-kelas{font-size:11px;color:var(--ink3)}
+    .chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;font-family:'Nunito',sans-serif}
+    .chip-fire{background:#fde8e7;color:#b03228;border:1.5px solid var(--a1)}
+    .chip-sky{background:#e3f0fc;color:#1e5fa8;border:1.5px solid var(--a2)}
+    .chip-green{background:#e3f5ec;color:#277a50;border:1.5px solid var(--a3)}
+    .chip-gold{background:#fdf2d8;color:#8a6010;border:1.5px solid var(--gold)}
+    .chip-gray{background:var(--parch3);color:var(--ink3);border:1.5px solid var(--border)}
+    .pbar-wrap{height:10px;background:var(--parch3);border-radius:5px;border:1px solid var(--border);overflow:hidden;margin-top:5px}
+    .pbar-fill{height:100%;border-radius:4px;transition:width .4s}
     .week-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
-    .wt{padding:6px 14px;background:#111316;color:#888;border:1px solid #333;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
-    .wt.active{background:#FFD700;color:#000;border-color:#FFD700;font-weight:bold}
-    .wt.done{border-color:#4caf50;color:#4caf50}
-    .wt.done.active{background:#4caf50;color:#000}
-    .form-lbl{font-size:10px;color:#777;margin-bottom:4px;display:block;letter-spacing:.5px;text-transform:uppercase}
-    .form-inp{width:100%;background:#0d0e0f;color:#fff;border:1px solid #333;border-radius:6px;padding:9px 11px;font-family:'Courier New',monospace;font-size:12px;outline:none;resize:vertical}
-    .form-inp:focus{border-color:#FFD700}
-    .pbar-wrap{height:5px;background:#222;border-radius:3px;margin-top:6px}
-    .pbar-fill{height:100%;background:#FFD700;border-radius:3px;transition:width .3s}
-    .log-box{background:#0a0b0c;border:1px solid #222;border-radius:8px;padding:11px;margin-bottom:8px}
-    .log-week{color:#FFD700;font-size:11px;font-weight:bold;margin-bottom:4px}
-    .log-detail{font-size:11px;color:#aaa;margin-bottom:4px;line-height:1.5}
-    .log-meta{font-size:10px;color:#555}
-    .locked-badge{display:inline-block;background:rgba(192,57,43,0.15);color:#c0392b;border:1px solid rgba(192,57,43,0.3);border-radius:4px;font-size:10px;padding:2px 7px;margin-top:5px}
-    .game-box{background:#111316;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:1rem;font-size:12px;color:#ccc}
-    .game-title{color:#FFD700;font-size:13px;font-weight:bold;margin-bottom:5px}
+    .wt{padding:7px 16px;background:var(--parch3);color:var(--ink3);border:2px solid var(--border);border-radius:20px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+    .wt.active{background:var(--gold);color:#fff;border-color:var(--gold)}
+    .wt.done{border-color:var(--a3);color:var(--a3);background:#f0faf4}
+    .wt.done.active{background:var(--a3);color:#fff;border-color:var(--a3)}
+    .role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:8px;margin-bottom:10px}
+    .role-chip{background:var(--parch);border:2px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;text-align:center;font-family:'Nunito',sans-serif;transition:border-color .15s}
+    .role-chip:hover{border-color:var(--gold)}
+    .role-chip.selected{background:#fdf2d8;border-color:var(--gold);color:#8a6010}
+    .role-chip.other-chip{border-style:dashed;color:var(--ink3)}
+    .custom-role-wrap{display:none;margin-bottom:10px}.custom-role-wrap.show{display:block}
+    .log-box{background:var(--parch);border:2px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+    .log-week{color:var(--gold);font-size:13px;font-weight:700;font-family:'Cinzel',serif;margin-bottom:5px}
+    .log-detail{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:5px}
+    .locked-tag{display:inline-block;background:#fde8e7;color:#b03228;border:1.5px solid var(--a1);border-radius:6px;font-size:12px;font-weight:700;padding:3px 10px;margin-top:5px}
+    .game-box{background:var(--parch);border:2px solid var(--border);border-radius:10px;padding:14px;margin-bottom:1rem}
+    .game-title{color:var(--ink);font-size:15px;font-weight:800;margin-bottom:6px;font-family:'Cinzel',serif}
+    .rpg-divider{border:none;border-top:2px solid var(--border);margin:1.25rem 0;position:relative}
+    .rpg-divider::after{content:'❖';position:absolute;left:50%;transform:translate(-50%,-50%);background:var(--parch);padding:0 8px;color:var(--border2);font-size:12px}
+    .form-lbl{font-size:13px;font-weight:700;color:var(--ink2);display:block;margin-bottom:5px}
+    .form-field{margin-bottom:12px}
+    .back-link{color:var(--ink3);font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:1rem}
+    .back-link:hover{color:var(--gold)}
+    .err{color:var(--a1);font-size:13px;font-weight:700;text-align:center;margin-top:8px;min-height:18px}
+    .ok{color:var(--a3);font-size:13px;font-weight:700;text-align:center;margin-top:8px;min-height:18px}
+    .prog-header{display:flex;align-items:center;gap:14px;margin-bottom:1.25rem}
+    .prog-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;flex-shrink:0}
+    .footer-nav{text-align:center;margin-top:2.5rem;padding-top:1rem;border-top:2px solid var(--border);display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap}
+    .footer-link{color:var(--ink3);font-size:13px;font-weight:700;text-decoration:none;border:2px solid var(--border);border-radius:8px;padding:7px 16px;display:inline-block;font-family:'Nunito',sans-serif}
+    .footer-link:hover{color:var(--ink);border-color:var(--gold)}
   </style>
 </head>
 <body>
 
-  <!-- SCREEN 1: LOGIN -->
-  <div id="s-login" class="screen active">
-    <div class="rpg-card">
-      <div style="font-size:30px;text-align:center;margin-bottom:.5rem">&#x2694;&#xFE0F;</div>
-      <div class="rpg-title">Portal Guild Login</div>
-      <div class="rpg-sub">Masukkan kode party untuk memasuki guild</div>
-      <input class="rpg-input" id="kodeInput" placeholder="Contoh: PARTY1-MV" maxlength="12" onkeydown="if(event.key==='Enter')doLogin()">
-      <button class="rpg-btn" onclick="doLogin()">&#x25B6; Akses Portal</button>
-      <div class="err" id="loginErr"></div>
-      <hr class="divider">
-      <div style="color:#555;font-size:11px;text-align:center">Belum punya kode? Hubungi dosen Anda.</div>
-    </div>
+<div id="s-login" class="screen active">
+  <div style="text-align:center;margin-top:1rem;margin-bottom:.5rem">
+    <div class="rpg-h3" style="margin-bottom:4px">Portal Quest</div>
+    <div class="rpg-h1">&#x2694; RPG Maker MV Tracker</div>
   </div>
+  <div class="parch-card">
+    <div style="font-size:36px;text-align:center;margin-bottom:.75rem">&#x1F5D1;</div>
+    <div class="rpg-h2" style="text-align:center;margin-bottom:4px">Portal Guild Login</div>
+    <div style="font-size:14px;color:var(--ink3);text-align:center;margin-bottom:1.25rem">Masukkan kode party untuk memasuki guild</div>
+    <input class="rpg-input" id="kodeInput" placeholder="Contoh: PARTY1-MV" maxlength="12" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-fire" onclick="doLogin()">&#x25B6; Akses Portal</button>
+    <div class="err" id="loginErr"></div>
+    <hr class="rpg-divider" style="margin:1.25rem 0">
+    <div style="color:var(--ink3);font-size:13px;text-align:center">Belum punya kode? Hubungi dosen Anda.</div>
+  </div>
+</div>
 
-  <!-- SCREEN 2: PARTY DASHBOARD -->
-  <div id="s-party" class="screen">
-    <div class="party-wrap">
-      <div class="back-link" onclick="doLogout()">&#x2190; Logout</div>
-      <div class="party-header">
-        <div id="charSprite" class="char-sprite"></div>
-        <div class="party-name" id="partyName">PARTY 1</div>
-        <div class="party-class" id="partyClass">Guild: Kelompok 1</div>
-      </div>
-      <div class="tab-row">
-        <button class="tab-btn active" onclick="setTab('anggota',this)">&#x2694; Anggota</button>
-        <button class="tab-btn" onclick="setTab('game',this)">&#x1F4DC; Info Game</button>
-      </div>
-      <div id="tab-anggota">
-        <div class="section-lbl">Pilih karakter untuk isi laporan</div>
-        <div class="member-grid" id="memberGrid"></div>
-      </div>
-      <div id="tab-game" style="display:none">
-        <div id="gameView">
-          <div class="game-box">
-            <div class="game-title" id="gameTitleDisp">Belum ada judul game</div>
-            <div id="gameStoryDisp" style="color:#666;font-size:11px">Kelompok belum mengisi deskripsi game.</div>
-          </div>
-          <button class="rpg-btn sec" onclick="showGameForm()">&#x270F;&#xFE0F; Isi / Edit Deskripsi Game</button>
+<div id="s-party" class="screen">
+  <div class="wrap">
+    <div class="back-link" onclick="doLogout()">&#x2190; Logout</div>
+    <div style="text-align:center;margin-bottom:1.25rem">
+      <div id="charSprite" style="width:88px;height:88px;margin:0 auto 10px;display:block"></div>
+      <div class="rpg-h1" id="partyName">PARTY 1</div>
+      <div style="font-size:14px;color:var(--ink3);margin-top:3px" id="partyClass">Guild: Kelompok 1</div>
+    </div>
+    <div class="tab-row">
+      <button class="rpg-tab active" onclick="setTab('anggota',this)">&#x2694; Anggota</button>
+      <button class="rpg-tab" onclick="setTab('game',this)">&#x1F4DC; Info Game</button>
+    </div>
+    <div id="tab-anggota" class="tab-content">
+      <div class="rpg-h3" style="margin-bottom:10px">Pilih karakter untuk isi laporan</div>
+      <div class="member-grid" id="memberGrid"></div>
+    </div>
+    <div id="tab-game" class="tab-content" style="display:none">
+      <div id="gameView">
+        <div class="game-box">
+          <div class="game-title" id="gameTitleDisp">Belum ada judul game</div>
+          <div id="gameStoryDisp" style="color:var(--ink3);font-size:13px">Kelompok belum mengisi deskripsi game.</div>
         </div>
-        <div id="gameForm" style="display:none">
-          <div style="margin-bottom:10px"><label class="form-lbl">Judul Game</label><input class="form-inp" id="gTitle" placeholder="Contoh: Chronicles of Aethoria"></div>
-          <div style="margin-bottom:10px"><label class="form-lbl">Genre</label><input class="form-inp" id="gGenre" placeholder="Contoh: RPG Petualangan"></div>
-          <div style="margin-bottom:10px"><label class="form-lbl">Garis Besar Cerita</label><textarea class="form-inp" id="gStory" rows="4" placeholder="Sinopsis singkat game RPG kelompok Anda..."></textarea></div>
-          <div style="margin-bottom:12px"><label class="form-lbl">Fitur Utama</label><textarea class="form-inp" id="gFeature" rows="3" placeholder="Fitur unggulan yang dikembangkan..."></textarea></div>
-          <button class="rpg-btn" onclick="saveGame()" style="margin-top:4px">&#x1F4BE; Simpan Info Game</button>
-          <button class="rpg-btn sec" onclick="cancelGame()">Batal</button>
-          <div class="ok" id="gameOk"></div>
-        </div>
+        <button class="btn btn-ghost" onclick="showGameForm()">&#x270F;&#xFE0F; Isi / Edit Deskripsi Game</button>
+      </div>
+      <div id="gameForm" style="display:none">
+        <div class="form-field"><label class="form-lbl">Judul Game</label><input class="rpg-input" id="gTitle" placeholder="Contoh: Chronicles of Aethoria"></div>
+        <div class="form-field"><label class="form-lbl">Genre</label><input class="rpg-input" id="gGenre" placeholder="Contoh: RPG Petualangan"></div>
+        <div class="form-field"><label class="form-lbl">Garis Besar Cerita</label><textarea class="rpg-input" id="gStory" rows="4" placeholder="Sinopsis singkat game RPG..."></textarea></div>
+        <div class="form-field"><label class="form-lbl">Fitur Utama</label><textarea class="rpg-input" id="gFeature" rows="3" placeholder="Fitur unggulan yang dikembangkan..."></textarea></div>
+        <button class="btn btn-gold" onclick="saveGame()">&#x1F4BE; Simpan Info Game</button>
+        <button class="btn btn-ghost" onclick="cancelGame()">Batal</button>
+        <div class="ok" id="gameOk"></div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- SCREEN 3: MEMBER PROGRESS -->
-  <div id="s-member" class="screen">
-    <div class="prog-wrap">
-      <div class="back-link" onclick="goParty()">&#x2190; Kembali ke Party</div>
-      <div class="prog-header">
-        <div class="prog-avatar" id="mAvatar"></div>
-        <div>
-          <div style="color:#FFD700;font-size:15px;font-weight:bold" id="mName">—</div>
-          <div style="color:#aaa;font-size:11px;margin-top:2px" id="mRole">—</div>
-          <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">
-            <span class="badge badge-gold" id="mNIM">—</span>
-            <span class="badge badge-gray" id="mKelas">—</span>
-          </div>
+<div id="s-member" class="screen">
+  <div class="wrap">
+    <div class="back-link" onclick="goParty()">&#x2190; Kembali ke Party</div>
+    <div class="prog-header">
+      <div class="prog-avatar" id="mAvatar"></div>
+      <div>
+        <div class="rpg-h2" id="mName">—</div>
+        <div style="font-size:13px;color:var(--ink3);margin-top:2px" id="mRole">—</div>
+        <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">
+          <span class="chip chip-gold" id="mNIM">—</span>
+          <span class="chip chip-gray" id="mKelas">—</span>
         </div>
       </div>
-      <div class="section-lbl">Pilih Minggu</div>
-      <div class="week-tabs" id="weekTabs"></div>
-      <div id="weekArea"></div>
     </div>
+    <div class="rpg-h3" style="margin-bottom:8px">Pilih Minggu</div>
+    <div class="week-tabs" id="weekTabs"></div>
+    <div id="weekArea"></div>
   </div>
+</div>
+
+<div class="footer-nav" id="footerNav" style="display:none">
+  <button id="btnExport" onclick="exportPDF()" style="display:none;background:var(--gold);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;border-bottom:2px solid #9a7018">&#x1F4C4; Export PDF</button>
+  <a href="leaderboard.html" class="footer-link">&#x1F3C6; Leaderboard</a>
+  <a href="dosen.html" class="footer-link">&#x1F393; Login Dosen</a>
+</div>
 
 <script>
-  // ⚠️ PENTING: Ganti URL di bawah dengan URL deploy terbaru dari Google Apps Script Anda
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4lpJM4NaX18C9lCfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
+const PARTIES = {
+  "PARTY1-MV":{ name:"PARTY 1 — IRON VANGUARD", guild:"Kelompok 1", el:"fire",    color:"#e8534a" },
+  "PARTY2-MV":{ name:"PARTY 2 — STORM ARCANE",  guild:"Kelompok 2", el:"thunder", color:"#4a90d9" },
+  "PARTY3-MV":{ name:"PARTY 3 — EARTH TITAN",   guild:"Kelompok 3", el:"earth",   color:"#52b788" },
+  "PARTY4-MV":{ name:"PARTY 4 — SHADOW BLADE",  guild:"Kelompok 4", el:"shadow",  color:"#9b59b6" },
+  "PARTY5-MV":{ name:"PARTY 5 — GOLDEN SAGE",   guild:"Kelompok 5", el:"light",   color:"#c9982a" }
+};
+const AVATAR_COLORS = ["#e8534a","#4a90d9","#52b788","#c9982a","#9b59b6"];
+const AVATAR_BG     = ["#fde8e7","#e3f0fc","#e3f5ec","#fdf2d8","#f0e8f8"];
+const ROLE_OPTIONS  = [
+  {icon:"&#x1F5FA;&#xFE0F;",label:"Mapper / Level Designer"},
+  {icon:"&#x1F4DC;",        label:"Eventer / Story Writer"},
+  {icon:"&#x1F4BB;",        label:"Programmer / JS Scripter"},
+  {icon:"&#x1F3A8;",        label:"Asset Creator / Pixel Artist"},
+  {icon:"&#x1F3B5;",        label:"Sound Designer / Composer"},
+  {icon:"&#x1F5BC;&#xFE0F;",label:"UI Designer"},
+  {icon:"&#x1F9EA;",        label:"QA Tester / Bug Hunter"},
+  {icon:"&#x1F4CB;",        label:"Project Manager"}
+];
+let ST = {kode:null,party:null,members:[],logs:{},gameInfo:null,activeMember:null};
+const SK = k => "pq_"+ST.kode+"_"+k;
+function loadLocal(){try{const m=localStorage.getItem(SK("members"));if(m)ST.members=JSON.parse(m);const l=localStorage.getItem(SK("logs"));if(l)ST.logs=JSON.parse(l);const g=localStorage.getItem(SK("game"));if(g)ST.gameInfo=JSON.parse(g);}catch(e){}}
+function saveLocal(){try{localStorage.setItem(SK("members"),JSON.stringify(ST.members));localStorage.setItem(SK("logs"),JSON.stringify(ST.logs));if(ST.gameInfo)localStorage.setItem(SK("game"),JSON.stringify(ST.gameInfo));}catch(e){}}
+function callGAS(p){fetch(GAS_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(p)}).catch(()=>{});}
+function callGASRead(p){const q=new URLSearchParams({data:JSON.stringify(p)});return fetch(GAS_URL+"?"+q.toString(),{method:"GET",redirect:"follow"}).then(r=>r.json()).catch(()=>null);}
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");}
 
-  const PARTIES = {
-    "PARTY1-MV": { name:"PARTY 1 — IRON VANGUARD", guild:"Kelompok 1", el:"fire",    color:"#e74c3c" },
-    "PARTY2-MV": { name:"PARTY 2 — STORM ARCANE",  guild:"Kelompok 2", el:"thunder", color:"#3498db" },
-    "PARTY3-MV": { name:"PARTY 3 — EARTH TITAN",   guild:"Kelompok 3", el:"earth",   color:"#27ae60" },
-    "PARTY4-MV": { name:"PARTY 4 — SHADOW BLADE",  guild:"Kelompok 4", el:"shadow",  color:"#9b59b6" },
-    "PARTY5-MV": { name:"PARTY 5 — GOLDEN SAGE",   guild:"Kelompok 5", el:"light",   color:"#f39c12" }
-  };
-
-  const AVATAR_COLORS = ["#e74c3c","#3498db","#27ae60","#f39c12","#9b59b6"];
-
-  const ROLE_OPTIONS = [
-    { icon:"🗺️", label:"Mapper / Level Designer"     },
-    { icon:"📜", label:"Eventer / Story Writer"       },
-    { icon:"💻", label:"Programmer / JS Scripter"     },
-    { icon:"🎨", label:"Asset Creator / Pixel Artist" },
-    { icon:"🎵", label:"Sound Designer / Composer"    },
-    { icon:"🖼️", label:"UI Designer"                  },
-    { icon:"🧪", label:"QA Tester / Bug Hunter"       },
-    { icon:"📋", label:"Project Manager"              }
-  ];
-
-  let ST = { kode:null, party:null, members:[], logs:{}, gameInfo:null, activeMember:null };
-
-  const SK = k => "pq_" + ST.kode + "_" + k;
-
-  function loadLocal() {
-    try {
-      const m = localStorage.getItem(SK("members")); if(m) ST.members  = JSON.parse(m);
-      const l = localStorage.getItem(SK("logs"));    if(l) ST.logs     = JSON.parse(l);
-      const g = localStorage.getItem(SK("game"));    if(g) ST.gameInfo = JSON.parse(g);
-    } catch(e) {}
-  }
-
-  function saveLocal() {
-    try {
-      localStorage.setItem(SK("members"), JSON.stringify(ST.members));
-      localStorage.setItem(SK("logs"),    JSON.stringify(ST.logs));
-      if(ST.gameInfo) localStorage.setItem(SK("game"), JSON.stringify(ST.gameInfo));
-    } catch(e) {}
-  }
-
-  function callGAS(payload) {
-    fetch(GAS_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) }).catch(()=>{});
-  }
-
-  function callGASRead(payload) {
-    // GET request ke GAS — tidak ada CORS preflight, langsung dibaca
-    const params = new URLSearchParams({ data: JSON.stringify(payload) });
-    return fetch(GAS_URL + "?" + params.toString(), {
-      method: "GET",
-      redirect: "follow"
-    }).then(r => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    }).catch(() => null);
-  }
-
-  function show(id) {
-    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-  }
-
-  function doLogin() {
-    const kode = document.getElementById("kodeInput").value.trim().toUpperCase();
-    const err  = document.getElementById("loginErr");
-    if (!kode) { err.textContent = "Masukkan kode party terlebih dahulu."; return; }
-    const party = PARTIES[kode];
-    if (!party) { err.textContent = "Kode tidak dikenali. Coba lagi."; return; }
-
-    err.textContent = "";
-    err.style.color = "#FFD700";
-    err.textContent = "Memuat data kelompok...";
-
-    ST.kode  = kode;
-    ST.party = party;
-    loadLocal(); // load logs & gameInfo dari cache lokal
-
-    // Ambil data anggota dari GAS via GET (work cross-device)
-    callGASRead({ action:"getMembers", kelompok: party.guild })
-      .then(res => {
-        if (res && res.status === "success" && res.result && res.result.length) {
-          ST.members = res.result;
-          saveLocal();
-        }
-        // Ambil info game
-        return callGASRead({ action:"getGameInfo", kelompok: party.guild });
-      })
-      .then(res2 => {
-        if (res2 && res2.result) {
-          ST.gameInfo = res2.result;
-          saveLocal();
-        }
-        err.textContent = "";
-        renderParty();
-        show("s-party");
-        showExportBtn();
-      })
-      .catch(() => {
-        // Fallback: pakai data lokal kalau GAS tidak bisa diakses
-        err.textContent = "";
-        renderParty();
-        show("s-party");
-        showExportBtn();
-      });
-  }
-
-  function doLogout() {
-    ST = { kode:null, party:null, members:[], logs:{}, gameInfo:null, activeMember:null };
-    document.getElementById("kodeInput").value = "";
-    document.getElementById("loginErr").textContent = "";
-    show("s-login");
-  }
-
-  function drawSprite(el, element, color) {
-    const sp = {
-      fire: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
-        <rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/>
-        <rect x="20" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="66" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <ellipse cx="44" cy="28" rx="4" ry="5" fill="#111"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="#111"/>
-        <path d="M46 35 Q50 39 54 35" stroke="#111" stroke-width="2" fill="none"/>
-        <polygon points="35,10 50,2 65,10 60,25 40,25" fill="${color}" opacity=".5"/>`,
-      thunder: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
-        <rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/>
-        <rect x="22" y="46" width="13" height="22" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="65" y="46" width="13" height="22" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <ellipse cx="44" cy="28" rx="4" ry="5" fill="#111"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="#111"/>
-        <path d="M46 35 Q50 39 54 35" stroke="#111" stroke-width="2" fill="none"/>
-        <polygon points="50,4 59,22 52,22 61,40 41,22 48,22" fill="#FFD700" opacity=".9"/>`,
-      earth: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
-        <rect x="37" y="44" width="26" height="30" rx="5" fill="${color}" opacity=".8"/>
-        <rect x="20" y="48" width="15" height="20" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="65" y="48" width="15" height="20" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <ellipse cx="44" cy="28" rx="4" ry="5" fill="#111"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="#111"/>
-        <path d="M45 36 Q50 40 55 36" stroke="#111" stroke-width="2" fill="none"/>
-        <rect x="13" y="40" width="8" height="28" rx="3" fill="#8B6914"/><rect x="9" y="36" width="16" height="8" rx="3" fill="#8B6914"/>`,
-      shadow: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
-        <rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/>
-        <rect x="21" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="65" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <ellipse cx="44" cy="28" rx="5" ry="6" fill="#ddd"/><ellipse cx="56" cy="28" rx="5" ry="6" fill="#ddd"/>
-        <path d="M45 36 Q50 38 55 36" stroke="#ddd" stroke-width="2" fill="none"/>
-        <ellipse cx="50" cy="10" rx="16" ry="7" fill="${color}" opacity=".5"/>`,
-      light: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
-        <rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/>
-        <rect x="21" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="65" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
-        <ellipse cx="44" cy="28" rx="4" ry="5" fill="#333"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="#333"/>
-        <path d="M46 36 Q50 40 54 36" stroke="#333" stroke-width="2" fill="none"/>
-        <circle cx="50" cy="30" r="22" fill="none" stroke="${color}" stroke-width="3" opacity=".35"/>
-        <circle cx="50" cy="30" r="28" fill="none" stroke="${color}" stroke-width="1.5" opacity=".15"/>`
-    };
-    el.innerHTML = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${sp[element]||sp.fire}</svg>`;
-  }
-
-  function renderParty() {
-    const p = ST.party;
-    document.getElementById("partyName").textContent  = p.name;
-    document.getElementById("partyClass").textContent = "Guild: " + p.guild;
-    drawSprite(document.getElementById("charSprite"), p.el, p.color);
-    renderMemberGrid();
-    renderGameInfo();
-    setTab("anggota", document.querySelector(".tab-btn"));
-  }
-
-  function renderMemberGrid() {
-    const grid = document.getElementById("memberGrid");
-    if (!ST.members.length) {
-      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:1.5rem 0;color:#666;font-size:12px">
-        <div style="font-size:22px;margin-bottom:8px">👥</div>
-        Data anggota belum tersedia.<br>
-        <span style="font-size:11px;color:#444">Dosen perlu mengisi data via panel admin.</span>
-      </div>`;
-      return;
-    }
-    grid.innerHTML = ST.members.map((m, i) => {
-      const ini = m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
-      const clr = AVATAR_COLORS[i % 5];
-      const hasLog = Object.keys(ST.logs[i] || {}).length > 0;
-      return `<div class="member-card" onclick="openMember(${i})">
-        <div class="mc-avatar" style="background:${clr}22;border:1.5px solid ${clr};color:${clr}">${ini}</div>
-        <div class="mc-nim">${m.nim}</div>
-        <div class="mc-name">${m.nama}</div>
-        <div class="mc-kelas">${m.kelas||""}</div>
-        <div class="mc-role">${m.jobdesk||"— Pilih role"}</div>
-        ${hasLog ? `<div style="margin-top:5px"><span class="badge badge-green">&#x2713; Ada Laporan</span></div>` : ""}
-      </div>`;
-    }).join("");
-  }
-
-  function renderGameInfo() {
-    const g = ST.gameInfo;
-    if (g) {
-      document.getElementById("gameTitleDisp").textContent = g.title || "Belum ada judul";
-      document.getElementById("gameStoryDisp").innerHTML =
-        `<div style="margin-bottom:3px"><span style="color:#777">Genre:</span> ${g.genre||"—"}</div>
-         <div style="margin-bottom:3px">${g.story||"—"}</div>
-         <div><span style="color:#777">Fitur:</span> ${g.feature||"—"}</div>`;
-    }
-  }
-
-  function setTab(tab, btn) {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("tab-anggota").style.display = tab==="anggota" ? "block" : "none";
-    document.getElementById("tab-game").style.display    = tab==="game"    ? "block" : "none";
-  }
-
-  function showGameForm() {
-    document.getElementById("gameView").style.display = "none";
-    document.getElementById("gameForm").style.display = "block";
-    if (ST.gameInfo) {
-      document.getElementById("gTitle").value   = ST.gameInfo.title   || "";
-      document.getElementById("gGenre").value   = ST.gameInfo.genre   || "";
-      document.getElementById("gStory").value   = ST.gameInfo.story   || "";
-      document.getElementById("gFeature").value = ST.gameInfo.feature || "";
-    }
-  }
-
-  function cancelGame() {
-    document.getElementById("gameForm").style.display = "none";
-    document.getElementById("gameView").style.display = "block";
-  }
-
-  function saveGame() {
-    ST.gameInfo = {
-      title:   document.getElementById("gTitle").value,
-      genre:   document.getElementById("gGenre").value,
-      story:   document.getElementById("gStory").value,
-      feature: document.getElementById("gFeature").value
-    };
-    saveLocal();
-    callGAS({ action:"saveGameInfo", payload:{ kelompok: ST.party.guild, ...ST.gameInfo }});
-    renderGameInfo();
-    cancelGame();
-    document.getElementById("gameOk").textContent = "Info game berhasil disimpan!";
-    setTimeout(() => document.getElementById("gameOk").textContent = "", 2500);
-  }
-
-  function openMember(idx) {
-    ST.activeMember = idx;
-    const m   = ST.members[idx];
-    const clr = AVATAR_COLORS[idx % 5];
-    const ini = m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
-    const av  = document.getElementById("mAvatar");
-    av.textContent  = ini;
-    av.style.cssText = `background:${clr}22;border:2px solid ${clr};color:${clr};width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;flex-shrink:0`;
-    document.getElementById("mName").textContent  = m.nama;
-    document.getElementById("mNIM").textContent   = m.nim;
-    document.getElementById("mKelas").textContent = m.kelas || "";
-    if (!m.jobdesk) {
-      document.getElementById("mRole").textContent = "Role belum dipilih";
-      renderRolePicker(idx);
-    } else {
-      document.getElementById("mRole").textContent = m.jobdesk;
-      renderWeekTabs(idx);
-    }
-    show("s-member");
-  }
-
-  function goParty() { show("s-party"); }
-
-  /* ── ROLE PICKER ── */
-  function renderRolePicker(idx) {
-    const area = document.getElementById("weekArea");
-    area.innerHTML = `
-      <div style="background:#111316;border:1px solid #333;border-radius:10px;padding:1rem;margin-bottom:1rem">
-        <div class="section-lbl" style="margin-bottom:10px">Pilih role kamu dalam tim</div>
-        <div class="role-grid">
-          ${ROLE_OPTIONS.map(r => `
-            <div class="role-chip" data-role="${r.label}" onclick="selectRole(this)">
-              ${r.icon} ${r.label}
-            </div>`).join("")}
-          <div class="role-chip other-chip" data-role="__other__" onclick="selectRole(this)">
-            &#x270F;&#xFE0F; Lainnya...
-          </div>
-        </div>
-        <div class="custom-role-wrap" id="customWrap">
-          <label class="form-lbl">Tuliskan role kamu</label>
-          <input class="form-inp" id="customRoleInput" placeholder="Contoh: Music Composer / Dokumentasi" maxlength="50">
-        </div>
-        <button class="rpg-btn" style="margin-top:12px" onclick="confirmRole(${idx})">
-          &#x2705; Konfirmasi Role
-        </button>
-        <div class="err" id="roleErr"></div>
-      </div>`;
-  }
-
-  function selectRole(chip) {
-    document.querySelectorAll(".role-chip").forEach(c => c.classList.remove("selected"));
-    chip.classList.add("selected");
-    const cw = document.getElementById("customWrap");
-    if (chip.dataset.role === "__other__") {
-      cw.classList.add("show");
-      document.getElementById("customRoleInput").focus();
-    } else {
-      cw.classList.remove("show");
-    }
-  }
-
-  function confirmRole(idx) {
-    const selected = document.querySelector(".role-chip.selected");
-    const errEl    = document.getElementById("roleErr");
-    if (!selected) { errEl.textContent = "Pilih salah satu role terlebih dahulu!"; return; }
-    let role = selected.dataset.role;
-    if (role === "__other__") {
-      role = (document.getElementById("customRoleInput").value || "").trim();
-      if (!role) { errEl.textContent = "Isi role kamu terlebih dahulu!"; return; }
-    }
-    errEl.textContent = "";
-    ST.members[idx].jobdesk = role;
-    saveLocal();
-    callGAS({ action:"saveMembers", kelompok: ST.party.guild, members: ST.members });
-    document.getElementById("mRole").textContent = role;
-    renderMemberGrid();
-    renderWeekTabs(idx);
-  }
-
-  /* ── WEEK TABS & FORM ── */
-  function renderWeekTabs(idx) {
-    const logs  = ST.logs[idx] || {};
-    const weeks = ["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];
-    const tabs  = document.getElementById("weekTabs");
-    tabs.innerHTML = weeks.map(w => {
-      const done = !!logs[w];
-      return `<button class="wt ${done?"done":""}" data-week="${w}" onclick="selectWeek('${w}',${idx},this)">${w}${done?" &#x2713;":""}</button>`;
-    }).join("");
-    selectWeek("Minggu 1", idx, tabs.querySelector(".wt"));
-  }
-
-  function selectWeek(week, idx, btn) {
-    document.querySelectorAll(".wt").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    const log = (ST.logs[idx] || {})[week];
-    const area = document.getElementById("weekArea");
-    const clr  = AVATAR_COLORS[idx % 5];
-    if (log) {
-      const pct = parseInt(log.progres) || 0;
-      area.innerHTML = `
-        <div class="section-lbl" style="margin-bottom:8px">Laporan ${week}</div>
-        <div class="log-box">
-          <div class="log-week">${week} — ${log.timestamp}</div>
-          <div style="display:flex;align-items:center;gap:10px;margin:7px 0">
-            <div style="flex:1"><div class="pbar-wrap"><div class="pbar-fill" style="width:${pct}%;background:${clr}"></div></div></div>
-            <div style="font-size:13px;color:${clr};font-weight:bold">${pct}%</div>
-          </div>
-          <div class="log-detail">${log.detail||"—"}</div>
-          <div class="log-meta">GitHub: <a href="${log.github}" target="_blank" style="color:#3498db">${log.github||"—"}</a></div>
-          <div class="locked-badge">&#x1F512; Laporan terkunci</div>
-        </div>`;
-    } else {
-      area.innerHTML = `
-        <div class="section-lbl" style="margin-bottom:10px">Isi Laporan ${week}</div>
-        <div style="margin-bottom:10px">
-          <label class="form-lbl">Progres penyelesaian (%)</label>
-          <input class="form-inp" type="number" id="inpPct" min="0" max="100" placeholder="0 – 100" oninput="updBar(this.value,'${clr}')">
-          <div class="pbar-wrap" style="margin-top:7px"><div class="pbar-fill" id="progBar" style="width:0%;background:${clr}"></div></div>
-        </div>
-        <div style="margin-bottom:10px">
-          <label class="form-lbl">Link commit GitHub (wajib)</label>
-          <input class="form-inp" type="url" id="inpGH" placeholder="https://github.com/...">
-        </div>
-        <div style="margin-bottom:12px">
-          <label class="form-lbl">Detail pekerjaan minggu ini</label>
-          <textarea class="form-inp" id="inpDetail" rows="4" placeholder="Tuliskan apa yang kamu kerjakan minggu ini..."></textarea>
-        </div>
-        <button class="rpg-btn" onclick="submitLog('${week}',${idx})" style="margin-top:4px">&#x1F4E4; Kirim Laporan</button>
-        <div class="err" id="subErr"></div>
-        <div class="ok"  id="subOk"></div>`;
-    }
-  }
-
-  function updBar(val, clr) {
-    const p = Math.min(100, Math.max(0, parseInt(val)||0));
-    document.getElementById("progBar").style.width = p + "%";
-  }
-
-  function submitLog(week, idx) {
-    const gh     = (document.getElementById("inpGH").value     || "").trim();
-    const pct    = (document.getElementById("inpPct").value    || "").trim();
-    const detail = (document.getElementById("inpDetail").value || "").trim();
-    const errEl  = document.getElementById("subErr");
-    const okEl   = document.getElementById("subOk");
-    if (!gh)  { errEl.textContent = "Link GitHub wajib diisi!";    return; }
-    if (!pct) { errEl.textContent = "Isi persentase progres!"; return; }
-    errEl.textContent = "";
-    okEl.textContent  = "Mengirim laporan...";
-    const ts = new Date().toLocaleString("id-ID");
-    if (!ST.logs[idx]) ST.logs[idx] = {};
-    ST.logs[idx][week] = { progres:pct, github:gh, detail, timestamp:ts };
-    saveLocal();
-    const m = ST.members[idx];
-    callGAS({
-      action: "saveProgress",
-      payload: {
-        kelompok: ST.party.guild,
-        minggu:   week,
-        nim:      m.nim,
-        nama:     m.nama,
-        role:     m.jobdesk,
-        progres:  pct,
-        github:   gh,
-        detail
-      }
-    });
-    renderMemberGrid();
-    renderWeekTabs(idx);
-    const activeBtn = document.querySelector(`.wt[data-week="${week}"]`);
-    if (activeBtn) selectWeek(week, idx, activeBtn);
-  }
-</script>
-
-  <div style="text-align:center;margin-top:2.5rem;padding-top:1rem;border-top:1px solid #1a1a1a;display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap">
-    <button id="btnExport" onclick="exportPDF()" style="display:none;background:transparent;color:#FFD700;border:1px solid #FFD700;border-radius:6px;padding:6px 16px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace"
-      onmouseover="this.style.background='rgba(255,215,0,0.1)'"
-      onmouseout="this.style.background='transparent'">
-      &#x1F4C4; Export Laporan PDF
-    </button>
-    <a href="dosen.html" style="color:#444;font-size:11px;text-decoration:none;font-family:'Courier New',monospace;border:1px solid #222;border-radius:6px;padding:6px 16px;display:inline-block"
-      onmouseover="this.style.color='#c0392b';this.style.borderColor='#c0392b'"
-      onmouseout="this.style.color='#444';this.style.borderColor='#222'">
-      &#x1F393; Login Dosen
-    </a>
-    <a href="leaderboard.html" style="color:#444;font-size:11px;text-decoration:none;font-family:'Courier New',monospace;border:1px solid #222;border-radius:6px;padding:6px 16px;display:inline-block"
-      onmouseover="this.style.color='#FFD700';this.style.borderColor='#FFD700'"
-      onmouseout="this.style.color='#444';this.style.borderColor='#222'">
-      &#x1F3C6; Leaderboard
-    </a>
-  </div>
-
-<script>
-function showExportBtn() {
-  var btn = document.getElementById("btnExport");
-  if (btn) btn.style.display = "inline-block";
+function doLogin(){
+  const kode=document.getElementById("kodeInput").value.trim().toUpperCase();
+  const err=document.getElementById("loginErr");
+  if(!kode){err.textContent="Masukkan kode party.";return;}
+  const party=PARTIES[kode];
+  if(!party){err.textContent="Kode tidak dikenali.";return;}
+  err.style.color="var(--gold)";err.textContent="Memuat data...";
+  ST.kode=kode;ST.party=party;loadLocal();
+  callGASRead({action:"getMembers",kelompok:party.guild}).then(res=>{
+    if(res&&res.status==="success"&&res.result&&res.result.length){ST.members=res.result;saveLocal();}
+    return callGASRead({action:"getGameInfo",kelompok:party.guild});
+  }).then(res2=>{
+    if(res2&&res2.result){ST.gameInfo=res2.result;saveLocal();}
+    err.textContent="";renderParty();show("s-party");
+    document.getElementById("footerNav").style.display="flex";
+    document.getElementById("btnExport").style.display="inline-block";
+  }).catch(()=>{err.textContent="";renderParty();show("s-party");document.getElementById("footerNav").style.display="flex";});
 }
 
-function exportPDF() {
-  if (!ST.party) return;
-  var p       = ST.party;
-  var members = ST.members;
-  var logs    = ST.logs;
-  var game    = ST.gameInfo;
-  var weeks   = ["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];
-  var COLORS  = ["#e74c3c","#3498db","#27ae60","#f39c12","#9b59b6"];
-  var now     = new Date().toLocaleString("id-ID");
+function doLogout(){
+  ST={kode:null,party:null,members:[],logs:{},gameInfo:null,activeMember:null};
+  document.getElementById("kodeInput").value="";document.getElementById("loginErr").textContent="";
+  document.getElementById("footerNav").style.display="none";document.getElementById("btnExport").style.display="none";
+  show("s-login");
+}
 
-  var membersHTML = members.map(function(m, i) {
-    var clr  = COLORS[i % COLORS.length];
-    var mLog = logs[i] || {};
-    var weekRows = weeks.map(function(w) {
-      var l = mLog[w];
-      if (!l) return "<tr><td>" + w + "</td><td colspan=\"3\" style=\"color:#999;font-style:italic\">Belum ada laporan</td></tr>";
-      var pct = parseInt(l.progres) || 0;
-      var barClr = pct >= 75 ? "#27ae60" : pct >= 40 ? "#f39c12" : "#e74c3c";
-      return "<tr><td>" + w + "</td><td><div style=\"display:flex;align-items:center;gap:8px\"><div style=\"width:80px;height:6px;background:#eee;border-radius:3px\"><div style=\"width:" + pct + "%;height:100%;background:" + barClr + ";border-radius:3px\"></div></div><b>" + pct + "%</b></div></td><td style=\"font-size:11px\">" + (l.detail||"—") + "</td><td style=\"font-size:11px\"><a href=\"" + (l.github||"#") + "\" style=\"color:#3498db\">" + (l.github||"—") + "</a></td></tr>";
-    }).join("");
+function drawSprite(el,element,color){
+  const extras={fire:`<polygon points="35,10 50,2 65,10 60,25 40,25" fill="${color}" opacity=".5"/>`,thunder:`<polygon points="50,4 59,22 52,22 61,40 41,22 48,22" fill="#f0c040" opacity=".9"/>`,earth:`<rect x="13" y="40" width="8" height="28" rx="3" fill="#8B6914"/><rect x="9" y="36" width="16" height="8" rx="3" fill="#8B6914"/>`,shadow:`<ellipse cx="50" cy="10" rx="16" ry="7" fill="${color}" opacity=".5"/>`,light:`<circle cx="50" cy="30" r="24" fill="none" stroke="${color}" stroke-width="2.5" opacity=".4"/>`};
+  const ec=element==="shadow"?"#e0d0c0":"#2c1810";
+  el.innerHTML=`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/><rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/><rect x="20" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/><rect x="66" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/><rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/><rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/><ellipse cx="44" cy="28" rx="4" ry="5" fill="${ec}"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="${ec}"/><path d="M46 35 Q50 39 54 35" stroke="${ec}" stroke-width="2" fill="none"/>${extras[element]||""}</svg>`;
+}
 
-    var filled = weeks.map(function(w){return mLog[w];}).filter(Boolean);
-    var avg = filled.length ? Math.round(filled.reduce(function(s,l){return s+(parseInt(l.progres)||0);},0)/filled.length) : 0;
-    var avgClr = avg >= 75 ? "#27ae60" : avg >= 40 ? "#f39c12" : "#e74c3c";
-    var ini = m.nama.split(" ").slice(0,2).map(function(w){return w[0];}).join("").toUpperCase();
+function renderParty(){
+  const p=ST.party;
+  document.getElementById("partyName").textContent=p.name;
+  document.getElementById("partyClass").textContent="Guild: "+p.guild;
+  drawSprite(document.getElementById("charSprite"),p.el,p.color);
+  renderMemberGrid();renderGameInfo();setTab("anggota",document.querySelector(".rpg-tab"));
+}
 
-    return "<div style=\"border:1px solid #ddd;border-left:4px solid " + clr + ";border-radius:8px;padding:16px;margin-bottom:16px;page-break-inside:avoid\"><div style=\"display:flex;align-items:center;gap:12px;margin-bottom:12px\"><div style=\"width:40px;height:40px;border-radius:50%;background:" + clr + "22;border:2px solid " + clr + ";display:flex;align-items:center;justify-content:center;font-weight:bold;color:" + clr + ";font-size:14px;flex-shrink:0\">" + ini + "</div><div><div style=\"font-weight:bold;font-size:14px\">" + m.nama + "</div><div style=\"font-size:12px;color:#666\">" + (m.nim||"") + " &bull; " + (m.kelas||"") + " &bull; <span style=\"color:" + clr + "\">" + (m.jobdesk||"—") + "</span></div></div><div style=\"margin-left:auto;text-align:right\"><div style=\"font-size:11px;color:#999\">Avg Progres</div><div style=\"font-size:18px;font-weight:bold;color:" + avgClr + "\">" + avg + "%</div></div></div><table style=\"width:100%;border-collapse:collapse;font-size:12px\"><thead><tr style=\"background:#f5f5f5\"><th style=\"padding:6px 8px;text-align:left;width:80px\">Minggu</th><th style=\"padding:6px 8px;text-align:left;width:130px\">Progres</th><th style=\"padding:6px 8px;text-align:left\">Detail Pekerjaan</th><th style=\"padding:6px 8px;text-align:left;width:160px\">GitHub</th></tr></thead><tbody>" + weekRows + "</tbody></table></div>";
+function renderMemberGrid(){
+  const grid=document.getElementById("memberGrid");
+  if(!ST.members.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:1.5rem 0;color:var(--ink3);font-size:14px"><div style="font-size:28px;margin-bottom:8px">&#x1F465;</div>Data anggota belum tersedia.<br><span style="font-size:13px">Dosen perlu mengisi data via panel admin.</span></div>`;return;}
+  grid.innerHTML=ST.members.map((m,i)=>{
+    const ini=m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+    const clr=AVATAR_COLORS[i%5];const bg=AVATAR_BG[i%5];
+    const hasLog=Object.keys(ST.logs[i]||{}).length>0;
+    return `<div class="member-card" onclick="openMember(${i})"><div class="mc-avatar" style="background:${bg};border:2px solid ${clr};color:${clr}">${ini}</div><div class="mc-nim">${m.nim}</div><div class="mc-name">${m.nama}</div><div class="mc-kelas">${m.kelas||""}</div><div class="mc-role">${m.jobdesk||"— Pilih role"}</div>${hasLog?`<div style="margin-top:5px"><span class="chip chip-green" style="font-size:11px">&#x2713; Ada Laporan</span></div>`:""}</div>`;
   }).join("");
+}
 
-  var html = "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"UTF-8\"><title>Laporan " + p.guild + " — Portal Quest</title><style>body{font-family:Arial,sans-serif;color:#222;margin:0;padding:24px;font-size:13px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:16px 0 8px;color:#333;border-bottom:1px solid #eee;padding-bottom:4px}table td,table th{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:top}@media print{body{padding:0}.no-print{display:none}@page{margin:15mm;size:A4}}</style></head><body>"
-    + "<button class=\"no-print\" onclick=\"window.print()\" style=\"margin-bottom:16px;padding:8px 20px;background:#FFD700;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px\">&#x1F5A8; Print / Save PDF</button>"
-    + "<div style=\"border-bottom:3px solid #1a1c1e;padding-bottom:12px;margin-bottom:16px\"><div style=\"font-size:11px;color:#999;margin-bottom:4px\">PORTAL QUEST — LAPORAN PROGRES PROJECT GAME</div><h1>" + p.name + "</h1><div style=\"font-size:12px;color:#666\">Guild: " + p.guild + " &nbsp;|&nbsp; Dicetak: " + now + "</div></div>"
-    + "<h2>&#x1F3AE; Info Game</h2>"
-    + "<table style=\"width:100%;border-collapse:collapse;margin-bottom:4px\"><tr><td style=\"width:140px;color:#888;font-size:12px\">Judul Game</td><td style=\"font-weight:bold\">" + (game && game.title ? game.title : "Belum diisi") + "</td></tr><tr><td style=\"color:#888;font-size:12px\">Genre</td><td>" + (game && game.genre ? game.genre : "—") + "</td></tr><tr><td style=\"color:#888;font-size:12px\">Sinopsis</td><td style=\"line-height:1.6\">" + (game && game.story ? game.story : "—") + "</td></tr><tr><td style=\"color:#888;font-size:12px\">Fitur Utama</td><td style=\"line-height:1.6\">" + (game && game.feature ? game.feature : "—") + "</td></tr></table>"
-    + "<h2>&#x1F465; Laporan Progres Anggota</h2>"
-    + membersHTML
-    + "<div style=\"margin-top:24px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center\">Portal Quest — RPG Maker MV Project Tracker &nbsp;|&nbsp; " + now + "</div>"
-    + "</body></html>";
+function renderGameInfo(){
+  const g=ST.gameInfo;
+  if(g&&g.title){
+    document.getElementById("gameTitleDisp").textContent=g.title;
+    document.getElementById("gameStoryDisp").innerHTML=`<div style="margin-bottom:4px"><span style="color:var(--ink3);font-weight:700">Genre:</span> ${g.genre||"—"}</div><div style="margin-bottom:4px;font-size:14px;line-height:1.6">${g.story||"—"}</div><div><span style="color:var(--ink3);font-weight:700">Fitur:</span> ${g.feature||"—"}</div>`;
+  }
+}
 
-  var win = window.open("", "_blank");
-  win.document.write(html);
-  win.document.close();
+function setTab(tab,btn){document.querySelectorAll(".rpg-tab").forEach(b=>b.classList.remove("active"));btn.classList.add("active");document.getElementById("tab-anggota").style.display=tab==="anggota"?"block":"none";document.getElementById("tab-game").style.display=tab==="game"?"block":"none";}
+function showGameForm(){document.getElementById("gameView").style.display="none";document.getElementById("gameForm").style.display="block";if(ST.gameInfo){document.getElementById("gTitle").value=ST.gameInfo.title||"";document.getElementById("gGenre").value=ST.gameInfo.genre||"";document.getElementById("gStory").value=ST.gameInfo.story||"";document.getElementById("gFeature").value=ST.gameInfo.feature||"";}}
+function cancelGame(){document.getElementById("gameForm").style.display="none";document.getElementById("gameView").style.display="block";}
+function saveGame(){ST.gameInfo={title:document.getElementById("gTitle").value,genre:document.getElementById("gGenre").value,story:document.getElementById("gStory").value,feature:document.getElementById("gFeature").value};saveLocal();callGAS({action:"saveGameInfo",payload:{kelompok:ST.party.guild,...ST.gameInfo}});renderGameInfo();cancelGame();document.getElementById("gameOk").textContent="Info game berhasil disimpan!";setTimeout(()=>document.getElementById("gameOk").textContent="",2500);}
+
+function openMember(idx){
+  ST.activeMember=idx;const m=ST.members[idx];const clr=AVATAR_COLORS[idx%5];const bg=AVATAR_BG[idx%5];
+  const ini=m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+  const av=document.getElementById("mAvatar");
+  av.textContent=ini;av.style.cssText=`background:${bg};border:2.5px solid ${clr};color:${clr};width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;flex-shrink:0`;
+  document.getElementById("mName").textContent=m.nama;document.getElementById("mNIM").textContent=m.nim;document.getElementById("mKelas").textContent=m.kelas||"";
+  if(!m.jobdesk){document.getElementById("mRole").textContent="Role belum dipilih";renderRolePicker(idx);}
+  else{document.getElementById("mRole").textContent=m.jobdesk;renderWeekTabs(idx);}
+  show("s-member");
+}
+
+function goParty(){show("s-party");}
+
+function renderRolePicker(idx){
+  document.getElementById("weekArea").innerHTML=`<div class="box"><div class="rpg-h3" style="margin-bottom:12px">Pilih role kamu dalam tim</div><div class="role-grid">${ROLE_OPTIONS.map(r=>`<div class="role-chip" data-role="${r.label}" onclick="selectRole(this)">${r.icon} ${r.label}</div>`).join("")}<div class="role-chip other-chip" data-role="__other__" onclick="selectRole(this)">&#x270F;&#xFE0F; Lainnya...</div></div><div class="custom-role-wrap" id="customWrap"><label class="form-lbl">Tuliskan role kamu</label><input class="rpg-input" id="customRoleInput" placeholder="Contoh: Music Composer" maxlength="50"></div><button class="btn btn-gold" style="margin-top:4px" onclick="confirmRole(${idx})">&#x2705; Konfirmasi Role</button><div class="err" id="roleErr"></div></div>`;
+}
+
+function selectRole(chip){document.querySelectorAll(".role-chip").forEach(c=>c.classList.remove("selected"));chip.classList.add("selected");const cw=document.getElementById("customWrap");if(chip.dataset.role==="__other__"){cw.classList.add("show");document.getElementById("customRoleInput").focus();}else cw.classList.remove("show");}
+
+function confirmRole(idx){
+  const sel=document.querySelector(".role-chip.selected");const errEl=document.getElementById("roleErr");
+  if(!sel){errEl.textContent="Pilih salah satu role!";return;}
+  let role=sel.dataset.role;
+  if(role==="__other__"){role=(document.getElementById("customRoleInput").value||"").trim();if(!role){errEl.textContent="Isi role kamu!";return;}}
+  errEl.textContent="";ST.members[idx].jobdesk=role;saveLocal();
+  callGAS({action:"saveMembers",kelompok:ST.party.guild,members:ST.members});
+  document.getElementById("mRole").textContent=role;renderMemberGrid();renderWeekTabs(idx);
+}
+
+function renderWeekTabs(idx){
+  const logs=ST.logs[idx]||{};const weeks=["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];
+  const tabs=document.getElementById("weekTabs");
+  tabs.innerHTML=weeks.map(w=>{const done=!!logs[w];return `<button class="wt ${done?"done":""}" data-week="${w}" onclick="selectWeek('${w}',${idx},this)">${w}${done?" &#x2713;":""}</button>`;}).join("");
+  selectWeek("Minggu 1",idx,tabs.querySelector(".wt"));
+}
+
+function selectWeek(week,idx,btn){
+  document.querySelectorAll(".wt").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
+  const log=(ST.logs[idx]||{})[week];const area=document.getElementById("weekArea");const clr=AVATAR_COLORS[idx%5];
+  if(log){
+    const pct=parseInt(log.progres)||0;const bc=pct>=75?"var(--a3)":pct>=40?"var(--a4)":"var(--a1)";
+    area.innerHTML=`<div class="rpg-h3" style="margin-bottom:10px">Laporan ${week}</div><div class="log-box"><div class="log-week">${week} — ${log.timestamp}</div><div style="display:flex;align-items:center;gap:12px;margin:8px 0"><div style="flex:1"><div class="pbar-wrap"><div class="pbar-fill" style="width:${pct}%;background:${bc}"></div></div></div><span style="font-size:15px;font-weight:800;color:${bc}">${pct}%</span></div><div class="log-detail">${log.detail||"—"}</div><div class="locked-tag">&#x1F512; Laporan terkunci</div></div>`;
+  } else {
+    area.innerHTML=`<div class="rpg-h3" style="margin-bottom:12px">Isi Laporan ${week}</div><div class="form-field"><label class="form-lbl">Progres Penyelesaian (%)</label><input class="rpg-input" type="number" id="inpPct" min="0" max="100" placeholder="0 – 100" oninput="updBar(this.value,'${clr}')"><div class="pbar-wrap"><div class="pbar-fill" id="progBar" style="width:0%;background:${clr}"></div></div></div><div class="form-field"><label class="form-lbl">Detail Pekerjaan Minggu Ini</label><textarea class="rpg-input" id="inpDetail" rows="4" placeholder="Tuliskan apa yang kamu kerjakan minggu ini..."></textarea></div><button class="btn btn-sky" onclick="submitLog('${week}',${idx})">&#x1F4E4; Kirim Laporan Quest</button><div class="err" id="subErr"></div><div class="ok" id="subOk"></div>`;
+  }
+}
+
+function updBar(val,clr){const p=Math.min(100,Math.max(0,parseInt(val)||0));document.getElementById("progBar").style.width=p+"%";}
+
+function submitLog(week,idx){
+  const pct=(document.getElementById("inpPct").value||"").trim();const detail=(document.getElementById("inpDetail").value||"").trim();
+  const errEl=document.getElementById("subErr");const okEl=document.getElementById("subOk");
+  if(!pct){errEl.textContent="Isi persentase progres!";return;}
+  errEl.textContent="";okEl.textContent="Mengirim laporan...";
+  const ts=new Date().toLocaleString("id-ID");
+  if(!ST.logs[idx])ST.logs[idx]={};
+  ST.logs[idx][week]={progres:pct,detail,timestamp:ts};saveLocal();
+  const m=ST.members[idx];
+  callGAS({action:"saveProgress",payload:{kelompok:ST.party.guild,minggu:week,nim:m.nim,nama:m.nama,role:m.jobdesk,progres:pct,github:"-",detail}});
+  renderMemberGrid();renderWeekTabs(idx);
+  const ab=document.querySelector(`.wt[data-week="${week}"]`);if(ab)selectWeek(week,idx,ab);
+}
+
+function exportPDF(){
+  if(!ST.party)return;
+  const p=ST.party;const game=ST.gameInfo;const now=new Date().toLocaleString("id-ID");
+  const weeks=["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];const COLORS=["#e8534a","#4a90d9","#52b788","#c9982a","#9b59b6"];
+  const mHTML=ST.members.map((m,i)=>{
+    const clr=COLORS[i%5];const mLog=ST.logs[i]||{};const ini=m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+    const filled=weeks.map(w=>mLog[w]).filter(Boolean);const avg=filled.length?Math.round(filled.reduce((s,l)=>s+(parseInt(l.progres)||0),0)/filled.length):0;
+    const wRows=weeks.map(w=>{const l=mLog[w];if(!l)return `<tr><td>${w}</td><td colspan="2" style="color:#999;font-style:italic">Belum ada laporan</td></tr>`;const pct=parseInt(l.progres)||0;const bc=pct>=75?"#52b788":pct>=40?"#f4a261":"#e8534a";return `<tr><td>${w}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="width:${pct}%;height:100%;background:${bc};border-radius:3px"></div></div><b>${pct}%</b></div></td><td>${l.detail||"—"}</td></tr>`;}).join("");
+    return `<div style="border:2px solid #b89a6a;border-left:4px solid ${clr};border-radius:8px;padding:16px;margin-bottom:16px;page-break-inside:avoid"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><div style="width:40px;height:40px;border-radius:50%;background:${clr}22;border:2px solid ${clr};display:flex;align-items:center;justify-content:center;font-weight:800;color:${clr};font-size:14px">${ini}</div><div><div style="font-weight:800;font-size:15px">${m.nama}</div><div style="font-size:12px;color:#6b4c30">${m.nim||""} &bull; ${m.kelas||""} &bull; <span style="color:${clr}">${m.jobdesk||"—"}</span></div></div><div style="margin-left:auto;text-align:right"><div style="font-size:11px;color:#999">Avg</div><div style="font-size:18px;font-weight:800;color:${avg>=75?"#52b788":avg>=40?"#f4a261":"#e8534a"}">${avg}%</div></div></div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5eed8"><th style="padding:6px 8px;text-align:left">Minggu</th><th style="padding:6px 8px;text-align:left">Progres</th><th style="padding:6px 8px;text-align:left">Detail</th></tr></thead><tbody>${wRows}</tbody></table></div>`;
+  }).join("");
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Laporan ${p.guild}</title><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet"><style>body{font-family:'Nunito',sans-serif;color:#2c1810;margin:0;padding:24px;background:#f5eed8}h1{font-family:'Cinzel',serif;font-size:22px}h2{font-family:'Cinzel',serif;font-size:15px;margin:16px 0 8px;color:#4a3020;border-bottom:2px solid #b89a6a;padding-bottom:4px}table td,table th{padding:6px 8px;border-bottom:1px solid #d4c49a;vertical-align:top}@media print{body{padding:0}.no-print{display:none}@page{margin:15mm;size:A4}}</style></head><body><button class="no-print" onclick="window.print()" style="margin-bottom:16px;padding:8px 20px;background:#c9982a;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:14px;font-family:'Nunito',sans-serif;color:#fff">&#x1F5A8; Print / Save PDF</button><div style="border-bottom:3px solid #b89a6a;padding-bottom:12px;margin-bottom:16px"><div style="font-size:11px;color:#6b4c30;margin-bottom:4px;font-family:'Cinzel',serif;letter-spacing:1px">PORTAL QUEST — LAPORAN PROGRES PROJECT GAME</div><h1>${p.name}</h1><div style="font-size:13px;color:#6b4c30">Guild: ${p.guild} &nbsp;|&nbsp; Dicetak: ${now}</div></div><h2>&#x1F3AE; Info Game</h2><table style="width:100%;border-collapse:collapse;margin-bottom:4px"><tr><td style="width:130px;color:#6b4c30;font-size:13px;font-weight:700">Judul Game</td><td style="font-weight:800">${game&&game.title?game.title:"Belum diisi"}</td></tr><tr><td style="color:#6b4c30;font-size:13px;font-weight:700">Genre</td><td>${game&&game.genre?game.genre:"—"}</td></tr><tr><td style="color:#6b4c30;font-size:13px;font-weight:700">Sinopsis</td><td style="line-height:1.6">${game&&game.story?game.story:"—"}</td></tr><tr><td style="color:#6b4c30;font-size:13px;font-weight:700">Fitur</td><td style="line-height:1.6">${game&&game.feature?game.feature:"—"}</td></tr></table><h2>&#x1F465; Laporan Progres Anggota</h2>${mHTML}<div style="margin-top:24px;padding-top:12px;border-top:2px solid #b89a6a;font-size:11px;color:#6b4c30;text-align:center">Portal Quest — RPG Maker MV Project Tracker &nbsp;|&nbsp; ${now}</div></body></html>`;
+  const win=window.open("","_blank");win.document.write(html);win.document.close();
 }
 </script>
-
 </body>
 </html>

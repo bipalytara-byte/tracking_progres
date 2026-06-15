@@ -2,87 +2,71 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portal Quest — Panel Dosen</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0d0e0f;color:#fff;font-family:'Courier New',monospace;min-height:100vh;padding:1.5rem}
+    :root{
+      --parch:#f5eed8;--parch2:#ede2c0;--parch3:#d4c49a;
+      --ink:#2c1810;--ink2:#4a3020;--ink3:#6b4c30;
+      --a1:#e8534a;--a2:#4a90d9;--a3:#52b788;--a4:#f4a261;--a5:#9b59b6;
+      --gold:#c9982a;--border:#b89a6a;--border2:#8b6a3a;
+    }
+    body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;min-height:100vh;padding:1.5rem}
     .screen{display:none}.screen.active{display:block}
     .d-wrap{max-width:780px;margin:0 auto}
-
-    /* LOGIN */
-    .login-card{background:#1a1c1e;border:1.5px solid #c0392b;border-radius:12px;padding:2rem;max-width:400px;margin:0 auto}
-    .login-title{color:#c0392b;font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px;letter-spacing:2px;text-transform:uppercase}
-    .login-sub{color:#888;font-size:12px;text-align:center;margin-bottom:1.5rem}
-
-    /* INPUTS & BUTTONS */
-    .d-input{width:100%;padding:11px 13px;background:#0d0e0f;color:#fff;border:1px solid #444;border-radius:8px;font-family:'Courier New',monospace;font-size:13px;margin-bottom:10px;outline:none}
-    .d-input:focus{border-color:#c0392b}
-    .m-inp{width:100%;background:#0d0e0f;color:#fff;border:1px solid #333;border-radius:6px;padding:7px 9px;font-family:'Courier New',monospace;font-size:12px;outline:none}
-    .m-inp:focus{border-color:#FFD700}
-    .m-sel{width:100%;background:#0d0e0f;color:#fff;border:1px solid #333;border-radius:6px;padding:7px 8px;font-family:'Courier New',monospace;font-size:12px;outline:none}
-    .m-sel:focus{border-color:#FFD700}
-    .btn{font-family:'Courier New',monospace;font-weight:bold;font-size:13px;border:none;border-radius:8px;cursor:pointer;letter-spacing:1px;padding:11px;width:100%;margin-top:4px}
-    .btn-red{background:#c0392b;color:#fff}.btn-red:hover{background:#e74c3c}
-    .btn-gold{background:#FFD700;color:#000}.btn-gold:hover{background:#FFA500}
-    .btn-sec{background:transparent;color:#aaa;border:1px solid #444;margin-top:6px}.btn-sec:hover{border-color:#aaa;color:#fff}
-    .btn-sm{width:auto;padding:6px 14px;font-size:11px;margin-top:0}
-    .btn-del{background:transparent;border:1px solid #333;color:#666;border-radius:6px;padding:7px 10px;cursor:pointer;font-size:12px;font-family:'Courier New',monospace}
-    .btn-del:hover{border-color:#c0392b;color:#c0392b}
-    .err{color:#ff4c4c;font-size:12px;text-align:center;margin-top:8px;min-height:16px}
-    .ok{color:#4cff4c;font-size:12px;text-align:center;margin-top:8px;min-height:16px}
-
-    /* NAV */
-    .d-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px;padding-bottom:1rem;border-bottom:1px solid #1e2020}
-    .d-nav-title{color:#c0392b;font-size:15px;font-weight:bold;letter-spacing:1px}
+    .rpg-h1{font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--ink);letter-spacing:2px}
+    .rpg-h2{font-family:'Cinzel',serif;font-size:16px;font-weight:600;color:var(--ink2)}
+    .rpg-h3{font-family:'Cinzel',serif;font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:1px}
+    .login-card{background:var(--parch2);border:2px solid var(--border);border-radius:12px;padding:2rem;max-width:400px;margin:2rem auto;position:relative}
+    .login-card::before{content:'';position:absolute;inset:5px;border:1px solid var(--border2);border-radius:8px;pointer-events:none}
+    .d-input{width:100%;background:var(--parch);color:var(--ink);border:2px solid var(--border);border-radius:8px;padding:11px 14px;font-family:'Nunito',sans-serif;font-size:15px;margin-bottom:10px;outline:none}
+    .d-input:focus{border-color:var(--a2)}
+    .m-inp{width:100%;background:var(--parch);color:var(--ink);border:2px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Nunito',sans-serif;font-size:13px;outline:none}
+    .m-inp:focus{border-color:var(--gold)}
+    .m-sel{width:100%;background:var(--parch);color:var(--ink);border:2px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Nunito',sans-serif;font-size:13px;outline:none}
+    .btn{font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;border:none;border-radius:8px;cursor:pointer;padding:11px 16px;width:100%;margin-top:4px;letter-spacing:.3px;transition:transform .1s}
+    .btn:active{transform:scale(.97)}
+    .btn-fire{background:var(--a1);color:#fff;border-bottom:3px solid #b03228}.btn-fire:hover{background:#f06058}
+    .btn-gold{background:var(--gold);color:#fff;border-bottom:3px solid #9a7018}.btn-gold:hover{background:#d4a832}
+    .btn-sky{background:var(--a2);color:#fff;border-bottom:3px solid #2e6ca8}.btn-sky:hover{background:#5a9fe0}
+    .btn-sec{background:transparent;color:var(--ink2);border:2px solid var(--border2);margin-top:6px}.btn-sec:hover{background:var(--parch3)}
+    .btn-sm{width:auto;padding:6px 14px;font-size:12px;margin-top:0}
+    .btn-del{background:transparent;border:2px solid var(--border);color:var(--ink3);border-radius:6px;padding:7px 10px;cursor:pointer;font-size:12px;font-family:'Nunito',sans-serif}.btn-del:hover{border-color:var(--a1);color:var(--a1)}
+    .err{color:var(--a1);font-size:13px;font-weight:700;text-align:center;margin-top:8px;min-height:16px}
+    .ok{color:var(--a3);font-size:13px;font-weight:700;text-align:center;margin-top:8px;min-height:16px}
+    .d-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px;padding-bottom:1rem;border-bottom:2px solid var(--border)}
+    .d-nav-title{color:var(--ink);font-family:'Cinzel',serif;font-size:15px;font-weight:700;letter-spacing:1px}
     .d-nav-tabs{display:flex;gap:6px;flex-wrap:wrap}
-    .nav-tab{padding:6px 14px;background:#111316;color:#888;border:1px solid #333;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
-    .nav-tab.active{background:#c0392b;color:#fff;border-color:#c0392b;font-weight:bold}
-    .logout-btn{padding:5px 12px;background:transparent;color:#555;border:1px solid #333;border-radius:6px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
-    .logout-btn:hover{color:#ff4c4c;border-color:#c0392b}
-
-    /* CARDS & SECTIONS */
-    .sec-lbl{font-size:10px;color:#666;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
-    .divider{border:none;border-top:1px solid #1e2020;margin:1rem 0}
-    .box{background:#111316;border:1px solid #222;border-radius:10px;padding:1rem;margin-bottom:10px}
-
-    /* STAT CARDS */
+    .nav-tab{padding:7px 14px;background:var(--parch3);color:var(--ink3);border:2px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+    .nav-tab.active{background:var(--a1);color:#fff;border-color:var(--a1)}
+    .logout-btn{padding:6px 12px;background:transparent;color:var(--ink3);border:2px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif}.logout-btn:hover{color:var(--a1);border-color:var(--a1)}
+    .sec-lbl{font-family:'Cinzel',serif;font-size:11px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
     .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
-    .stat-card{background:#111316;border:1px solid #222;border-radius:10px;padding:12px;text-align:center}
-    .stat-num{font-size:22px;font-weight:bold;margin-bottom:3px}
-    .stat-lbl{font-size:10px;color:#666;letter-spacing:.5px;text-transform:uppercase}
-
-    /* OVERVIEW PARTY CARDS */
-    .party-card{background:#111316;border:1px solid #222;border-radius:10px;padding:12px 14px;margin-bottom:8px}
-    .pbar-wrap{height:4px;background:#222;border-radius:2px;margin:7px 0 10px}
-    .pbar-fill{height:100%;border-radius:2px;transition:width .4s}
-
-    /* PROGRESS TABLE */
-    .prog-table-wrap{overflow-x:auto}
-    .prog-table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}
-    .prog-table th{background:#111316;color:#888;padding:8px 10px;text-align:left;font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid #222;white-space:nowrap}
-    .prog-table td{padding:8px 10px;border-bottom:1px solid #1a1a1a;color:#ccc;vertical-align:middle}
-    .prog-table tr:hover td{background:#111316}
-    .pbar-mini{width:60px;height:4px;background:#222;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:4px}
-    .pbar-mini-fill{height:100%;border-radius:2px;display:block}
+    .stat-card{background:var(--parch2);border:2px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+    .stat-num{font-size:24px;font-weight:800;font-family:'Cinzel',serif;margin-bottom:3px}
+    .stat-lbl{font-size:11px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .party-card{background:var(--parch2);border:2px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+    .pbar-wrap{height:8px;background:var(--parch3);border-radius:4px;border:1px solid var(--border);overflow:hidden;margin:7px 0 8px}
+    .pbar-fill{height:100%;border-radius:3px;transition:width .4s}
     .party-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
-    .pt{padding:5px 12px;background:#111316;color:#888;border:1px solid #333;border-radius:16px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace;font-weight:bold}
-
-    /* ANGGOTA FORM */
-    .anggota-header-row{display:grid;grid-template-columns:28px 1fr 1.4fr 75px 1.2fr 32px;gap:7px;margin-bottom:5px}
+    .pt{padding:5px 12px;background:var(--parch3);color:var(--ink3);border:2px solid var(--border);border-radius:16px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700}
+    .prog-table-wrap{overflow-x:auto}
+    .prog-table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+    .prog-table th{background:var(--parch3);color:var(--ink3);padding:8px 10px;text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:2px solid var(--border);white-space:nowrap;font-family:'Cinzel',serif}
+    .prog-table td{padding:8px 10px;border-bottom:1px solid var(--parch3);color:var(--ink2);vertical-align:middle}
+    .prog-table tr:hover td{background:var(--parch3)}
+    .pbar-mini{width:60px;height:5px;background:var(--parch3);border-radius:3px;display:inline-block;vertical-align:middle;margin-right:4px;border:1px solid var(--border)}
+    .pbar-mini-fill{height:100%;border-radius:2px;display:block}
+    .box{background:var(--parch2);border:2px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:10px}
     .anggota-data-row{display:grid;grid-template-columns:28px 1fr 1.4fr 75px 1.2fr 32px;gap:7px;align-items:center;margin-bottom:7px}
-
-    /* KRITERIA */
-    .krit-box{background:#111316;border:1px solid #222;border-radius:10px;padding:1rem;margin-bottom:10px}
+    .krit-box{background:var(--parch2);border:2px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:10px}
     .krit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
     .krit-row{display:grid;grid-template-columns:1fr 95px 32px;gap:8px;align-items:center;margin-bottom:7px}
-    .total-bar{display:flex;align-items:center;justify-content:space-between;background:#111316;border:1px solid #333;border-radius:8px;padding:12px 16px;margin-top:10px}
-
-    @media(max-width:600px){
-      .anggota-header-row,.anggota-data-row{grid-template-columns:24px 1fr 1fr 60px 28px;gap:5px}
-      .anggota-data-row .jobdesk-col{display:none}
-      .anggota-header-row .jobdesk-lbl{display:none}
-    }
+    .total-bar{display:flex;align-items:center;justify-content:space-between;background:var(--parch2);border:2px solid var(--border);border-radius:8px;padding:12px 16px;margin-top:10px}
+    .divider{border:none;border-top:2px solid var(--border);margin:1rem 0}
   </style>
 </head>
 <body>
@@ -197,7 +181,7 @@
 
 <script>
   // ⚠️ Ganti URL berikut dengan URL deploy terbaru Google Apps Script Anda
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4lpJM4NaX18C9lCfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
 
   // Kode dosen diverifikasi langsung ke GAS — tidak perlu diubah di sini
   // Ganti KODE_DOSEN hanya di Google Apps Script (baris CONFIG.KODE_DOSEN)
@@ -333,7 +317,7 @@
     return {
       tugas: [
         { label:"Kelengkapan laporan progres mingguan", persen:20 },
-        { label:"Konsistensi commit GitHub",             persen:10 },
+        { label:"Keaktifan kontribusi mingguan",         persen:10 },
         { label:"Kualitas deskripsi pekerjaan",          persen:10 }
       ],
       uts: [
@@ -684,7 +668,7 @@ function exportPDFKelompok(kelompok) {
       if (pct === undefined) return "<tr><td>" + w + "</td><td colspan=\"3\" style=\"color:#999;font-style:italic\">Belum ada laporan</td></tr>";
       var barClr = pct >= 75 ? "#27ae60" : pct >= 40 ? "#f39c12" : "#e74c3c";
       var logEntry = logs.find(function(l){ return l.minggu===w && (l.nim===m.nim||l.nama===m.nama); }) || {};
-      return "<tr><td>" + w + "</td><td><div style=\"display:flex;align-items:center;gap:8px\"><div style=\"width:80px;height:6px;background:#eee;border-radius:3px\"><div style=\"width:" + pct + "%;height:100%;background:" + barClr + ";border-radius:3px\"></div></div><b>" + pct + "%</b></div></td><td style=\"font-size:11px\">" + (logEntry.detail||"—") + "</td><td style=\"font-size:11px\"><a href=\"" + (logEntry.github||"#") + "\" style=\"color:#3498db\">" + (logEntry.github||"—") + "</a></td></tr>";
+      return "<tr><td>" + w + "</td><td><div style=\"display:flex;align-items:center;gap:8px\"><div style=\"width:80px;height:6px;background:#eee;border-radius:3px\"><div style=\"width:" + pct + "%;height:100%;background:" + barClr + ";border-radius:3px\"></div></div><b>" + pct + "%</b></div></td><td>" + (logEntry.detail||"—") + "</td></tr>";
     }).join("");
 
     var wVals = weeks.map(function(w){ return mLog.weeks[w]; }).filter(function(v){ return v !== undefined; });
@@ -692,7 +676,7 @@ function exportPDFKelompok(kelompok) {
     var avgClr = avg >= 75 ? "#27ae60" : avg >= 40 ? "#f39c12" : "#e74c3c";
     var ini = m.nama.split(" ").slice(0,2).map(function(w){return w[0];}).join("").toUpperCase();
 
-    return "<div style=\"border:1px solid #ddd;border-left:4px solid " + clr + ";border-radius:8px;padding:16px;margin-bottom:16px;page-break-inside:avoid\"><div style=\"display:flex;align-items:center;gap:12px;margin-bottom:12px\"><div style=\"width:40px;height:40px;border-radius:50%;background:" + clr + "22;border:2px solid " + clr + ";display:flex;align-items:center;justify-content:center;font-weight:bold;color:" + clr + ";font-size:14px;flex-shrink:0\">" + ini + "</div><div><div style=\"font-weight:bold;font-size:14px\">" + m.nama + "</div><div style=\"font-size:12px;color:#666\">" + (m.nim||"") + " &bull; " + (m.kelas||"") + " &bull; <span style=\"color:" + clr + "\">" + (m.jobdesk||"—") + "</span></div></div><div style=\"margin-left:auto;text-align:right\"><div style=\"font-size:11px;color:#999\">Avg Progres</div><div style=\"font-size:18px;font-weight:bold;color:" + avgClr + "\">" + avg + "%</div></div></div><table style=\"width:100%;border-collapse:collapse;font-size:12px\"><thead><tr style=\"background:#f5f5f5\"><th style=\"padding:6px 8px;text-align:left;width:80px\">Minggu</th><th style=\"padding:6px 8px;text-align:left;width:130px\">Progres</th><th style=\"padding:6px 8px;text-align:left\">Detail Pekerjaan</th><th style=\"padding:6px 8px;text-align:left;width:160px\">GitHub</th></tr></thead><tbody>" + weekRows + "</tbody></table></div>";
+    return "<div style=\"border:1px solid #ddd;border-left:4px solid " + clr + ";border-radius:8px;padding:16px;margin-bottom:16px;page-break-inside:avoid\"><div style=\"display:flex;align-items:center;gap:12px;margin-bottom:12px\"><div style=\"width:40px;height:40px;border-radius:50%;background:" + clr + "22;border:2px solid " + clr + ";display:flex;align-items:center;justify-content:center;font-weight:bold;color:" + clr + ";font-size:14px;flex-shrink:0\">" + ini + "</div><div><div style=\"font-weight:bold;font-size:14px\">" + m.nama + "</div><div style=\"font-size:12px;color:#666\">" + (m.nim||"") + " &bull; " + (m.kelas||"") + " &bull; <span style=\"color:" + clr + "\">" + (m.jobdesk||"—") + "</span></div></div><div style=\"margin-left:auto;text-align:right\"><div style=\"font-size:11px;color:#999\">Avg Progres</div><div style=\"font-size:18px;font-weight:bold;color:" + avgClr + "\">" + avg + "%</div></div></div><table style=\"width:100%;border-collapse:collapse;font-size:12px\"><thead><tr style=\"background:#f5f5f5\"><th style=\"padding:6px 8px;text-align:left;width:80px\">Minggu</th><th style=\"padding:6px 8px;text-align:left;width:130px\">Progres</th><th style=\"padding:6px 8px;text-align:left\">Detail Pekerjaan</th></tr></thead><tbody>" + weekRows + "</tbody></table></div>";
   }).join("") || "<p style=\"color:#999;font-style:italic\">Belum ada anggota terdaftar.</p>";
 
   var html = "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"UTF-8\"><title>Laporan " + kelompok + " — Portal Quest</title><style>body{font-family:Arial,sans-serif;color:#222;margin:0;padding:24px;font-size:13px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:16px 0 8px;color:#333;border-bottom:1px solid #eee;padding-bottom:4px}table td,table th{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:top}@media print{body{padding:0}.no-print{display:none}@page{margin:15mm;size:A4}}</style></head><body>"
