@@ -3,127 +3,558 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Quest: Proyek Game</title>
+  <title>Portal Quest: Proyek Game RPG</title>
   <style>
-    body { background-color: #2C2F33; color: #FFFFFF; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 20px; }
-    .card { background-color: #23272A; border: 2px solid #FFD700; border-radius: 10px; padding: 30px; max-width: 500px; margin: 40px auto; box-shadow: 0px 0px 15px #FFD700; }
-    input, select, textarea { width: 90%; padding: 12px; margin: 10px 0; background-color: #2C2F33; color: #FFF; border: 1px solid #FFD700; border-radius: 5px; box-sizing: border-box; }
-    button { background-color: #FFD700; color: #000; padding: 12px 25px; font-weight: bold; font-family: inherit; border: none; cursor: pointer; border-radius: 5px; font-size: 16px; margin-top: 15px; width: 90%;}
-    button:hover { background-color: #FFA500; }
-    #formSection { display: none; }
-    .label-text { text-align: left; width: 90%; display: block; margin: auto; font-size: 14px; color: #ccc; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d0e0f;color:#fff;font-family:'Courier New',monospace;min-height:100vh;padding:1.5rem}
+    .screen{display:none}.screen.active{display:block}
+    .rpg-card{background:#1a1c1e;border:1.5px solid #FFD700;border-radius:12px;padding:2rem;max-width:460px;margin:0 auto}
+    .rpg-title{color:#FFD700;font-size:17px;font-weight:bold;text-align:center;margin-bottom:4px;letter-spacing:2px;text-transform:uppercase}
+    .rpg-sub{color:#888;font-size:12px;text-align:center;margin-bottom:1.5rem}
+    .rpg-input{width:100%;padding:11px 13px;background:#0d0e0f;color:#fff;border:1px solid #444;border-radius:8px;font-family:'Courier New',monospace;font-size:13px;margin-bottom:10px;outline:none}
+    .rpg-input:focus{border-color:#FFD700}
+    .rpg-btn{width:100%;padding:11px;background:#FFD700;color:#000;font-family:'Courier New',monospace;font-weight:bold;font-size:13px;border:none;border-radius:8px;cursor:pointer;letter-spacing:1px;margin-top:4px}
+    .rpg-btn:hover{background:#FFA500}
+    .rpg-btn.sec{background:transparent;color:#FFD700;border:1px solid #FFD700;margin-top:8px}
+    .rpg-btn.sec:hover{background:rgba(255,215,0,0.08)}
+    .rpg-btn.sm{width:auto;padding:7px 16px;font-size:12px;margin-top:0}
+    .err{color:#ff4c4c;font-size:12px;text-align:center;margin-top:8px;min-height:16px}
+    .ok{color:#4cff4c;font-size:12px;text-align:center;margin-top:8px;min-height:16px}
+    .back-link{color:#888;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:1rem}
+    .back-link:hover{color:#FFD700}
+    .section-lbl{font-size:10px;color:#666;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+    .divider{border:none;border-top:1px solid #222;margin:1rem 0}
+
+    /* Role selector */
+    .role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px}
+    .role-chip{background:#111316;border:1px solid #333;border-radius:20px;padding:7px 12px;font-size:11px;color:#aaa;cursor:pointer;text-align:center;font-family:'Courier New',monospace;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .role-chip:hover{border-color:#FFD700;color:#FFD700}
+    .role-chip.selected{background:rgba(255,215,0,0.12);border-color:#FFD700;color:#FFD700;font-weight:bold}
+    .role-chip.other-chip{border-style:dashed;color:#888}
+    .role-chip.other-chip.selected{border-style:solid}
+    .custom-role-wrap{display:none;margin-bottom:10px}
+    .custom-role-wrap.show{display:block}
+
+    /* Party screen */
+    .party-wrap{max-width:560px;margin:0 auto}
+    .party-header{text-align:center;margin-bottom:1.25rem}
+    .char-sprite{width:88px;height:88px;margin:0 auto 10px;display:block}
+    .party-name{color:#FFD700;font-size:18px;font-weight:bold;letter-spacing:2px}
+    .party-class{color:#888;font-size:11px;margin-top:3px}
+    .tab-row{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+    .tab-btn{padding:6px 14px;background:#111316;color:#888;border:1px solid #333;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
+    .tab-btn.active{background:#FFD700;color:#000;border-color:#FFD700;font-weight:bold}
+    .member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:9px;margin-bottom:1rem}
+    .member-card{background:#111316;border:1px solid #333;border-radius:10px;padding:11px 9px;cursor:pointer;text-align:center;transition:border-color .15s}
+    .member-card:hover{border-color:#FFD700}
+    .member-card:hover .mc-name{color:#FFD700}
+    .mc-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;margin:0 auto 7px;font-weight:bold}
+    .mc-nim{font-size:10px;color:#666;margin-bottom:2px}
+    .mc-name{font-size:12px;color:#ddd;font-weight:bold;margin-bottom:3px}
+    .mc-role{font-size:10px;color:#FFD700;margin-bottom:2px}
+    .mc-kelas{font-size:10px;color:#777}
+    .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px}
+    .badge-green{background:rgba(76,255,76,0.1);color:#4cff4c;border:1px solid rgba(76,255,76,0.2)}
+    .badge-gold{background:rgba(255,215,0,0.1);color:#FFD700;border:1px solid rgba(255,215,0,0.2)}
+    .badge-gray{background:rgba(255,255,255,0.05);color:#888;border:1px solid #333}
+
+    /* Progress screen */
+    .prog-wrap{max-width:500px;margin:0 auto}
+    .prog-header{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem}
+    .prog-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;flex-shrink:0}
+    .week-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+    .wt{padding:6px 14px;background:#111316;color:#888;border:1px solid #333;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace}
+    .wt.active{background:#FFD700;color:#000;border-color:#FFD700;font-weight:bold}
+    .wt.done{border-color:#4caf50;color:#4caf50}
+    .wt.done.active{background:#4caf50;color:#000}
+    .form-lbl{font-size:10px;color:#777;margin-bottom:4px;display:block;letter-spacing:.5px;text-transform:uppercase}
+    .form-inp{width:100%;background:#0d0e0f;color:#fff;border:1px solid #333;border-radius:6px;padding:9px 11px;font-family:'Courier New',monospace;font-size:12px;outline:none;resize:vertical}
+    .form-inp:focus{border-color:#FFD700}
+    .pbar-wrap{height:5px;background:#222;border-radius:3px;margin-top:6px}
+    .pbar-fill{height:100%;background:#FFD700;border-radius:3px;transition:width .3s}
+    .log-box{background:#0a0b0c;border:1px solid #222;border-radius:8px;padding:11px;margin-bottom:8px}
+    .log-week{color:#FFD700;font-size:11px;font-weight:bold;margin-bottom:4px}
+    .log-detail{font-size:11px;color:#aaa;margin-bottom:4px;line-height:1.5}
+    .log-meta{font-size:10px;color:#555}
+    .locked-badge{display:inline-block;background:rgba(192,57,43,0.15);color:#c0392b;border:1px solid rgba(192,57,43,0.3);border-radius:4px;font-size:10px;padding:2px 7px;margin-top:5px}
+    .game-box{background:#111316;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:1rem;font-size:12px;color:#ccc}
+    .game-title{color:#FFD700;font-size:13px;font-weight:bold;margin-bottom:5px}
   </style>
 </head>
 <body>
 
-  <div class="card" id="loginSection">
-    <h2>🎮 PORTAL GUILD LOGIN 🎮</h2>
-    <p>Masukkan Kode Party Anda untuk melanjutkan:</p>
-    <input type="text" id="kodeInput" placeholder="Contoh: PARTY1-MV">
-    <button onclick="checkCode()">Akses Portal</button>
-    <p id="loginPesan" style="color: #ff4c4c; margin-top: 15px;"></p>
+  <!-- SCREEN 1: LOGIN -->
+  <div id="s-login" class="screen active">
+    <div class="rpg-card">
+      <div style="font-size:30px;text-align:center;margin-bottom:.5rem">&#x2694;&#xFE0F;</div>
+      <div class="rpg-title">Portal Guild Login</div>
+      <div class="rpg-sub">Masukkan kode party untuk memasuki guild</div>
+      <input class="rpg-input" id="kodeInput" placeholder="Contoh: PARTY1-MV" maxlength="12" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="rpg-btn" onclick="doLogin()">&#x25B6; Akses Portal</button>
+      <div class="err" id="loginErr"></div>
+      <hr class="divider">
+      <div style="color:#555;font-size:11px;text-align:center">Belum punya kode? Hubungi dosen Anda.</div>
+    </div>
   </div>
 
-  <div class="card" id="formSection">
-    <h2 id="judulKelompok" style="color: #FFD700;">QUEST LOG</h2>
-    <p>Laporkan progres pengembangan RPG Maker MV kelompok Anda.</p>
-    <input type="hidden" id="kelompokAktif">
-    
-    <span class="label-text">Pilih Minggu:</span>
-    <select id="minggu">
-      <option value="Minggu 1">Minggu 1</option>
-      <option value="Minggu 2">Minggu 2</option>
-      <option value="Minggu 3">Minggu 3</option>
-      <option value="Minggu 4">Minggu 4</option>
-    </select>
-    
-    <input type="text" id="nama" placeholder="Nama Anggota (Contoh: Budi)">
-    <input type="text" id="role" placeholder="Jobdesk (Contoh: Eventer / Mapper)">
-    <input type="number" id="progres" placeholder="Progres Penyelesaian (%)" min="0" max="100">
-    <input type="url" id="github" placeholder="Tautan Commit GitHub (Wajib)">
-    <textarea id="detail" rows="4" placeholder="Detail pekerjaan mandiri yang diselesaikan pada minggu ini..."></textarea>
-    
-    <button onclick="submitData()">Kirim Laporan Progres</button>
-    <p id="statusPesan" style="margin-top: 15px; font-weight: bold;"></p>
+  <!-- SCREEN 2: PARTY DASHBOARD -->
+  <div id="s-party" class="screen">
+    <div class="party-wrap">
+      <div class="back-link" onclick="doLogout()">&#x2190; Logout</div>
+      <div class="party-header">
+        <div id="charSprite" class="char-sprite"></div>
+        <div class="party-name" id="partyName">PARTY 1</div>
+        <div class="party-class" id="partyClass">Guild: Kelompok 1</div>
+      </div>
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="setTab('anggota',this)">&#x2694; Anggota</button>
+        <button class="tab-btn" onclick="setTab('game',this)">&#x1F4DC; Info Game</button>
+      </div>
+      <div id="tab-anggota">
+        <div class="section-lbl">Pilih karakter untuk isi laporan</div>
+        <div class="member-grid" id="memberGrid"></div>
+      </div>
+      <div id="tab-game" style="display:none">
+        <div id="gameView">
+          <div class="game-box">
+            <div class="game-title" id="gameTitleDisp">Belum ada judul game</div>
+            <div id="gameStoryDisp" style="color:#666;font-size:11px">Kelompok belum mengisi deskripsi game.</div>
+          </div>
+          <button class="rpg-btn sec" onclick="showGameForm()">&#x270F;&#xFE0F; Isi / Edit Deskripsi Game</button>
+        </div>
+        <div id="gameForm" style="display:none">
+          <div style="margin-bottom:10px"><label class="form-lbl">Judul Game</label><input class="form-inp" id="gTitle" placeholder="Contoh: Chronicles of Aethoria"></div>
+          <div style="margin-bottom:10px"><label class="form-lbl">Genre</label><input class="form-inp" id="gGenre" placeholder="Contoh: RPG Petualangan"></div>
+          <div style="margin-bottom:10px"><label class="form-lbl">Garis Besar Cerita</label><textarea class="form-inp" id="gStory" rows="4" placeholder="Sinopsis singkat game RPG kelompok Anda..."></textarea></div>
+          <div style="margin-bottom:12px"><label class="form-lbl">Fitur Utama</label><textarea class="form-inp" id="gFeature" rows="3" placeholder="Fitur unggulan yang dikembangkan..."></textarea></div>
+          <button class="rpg-btn" onclick="saveGame()" style="margin-top:4px">&#x1F4BE; Simpan Info Game</button>
+          <button class="rpg-btn sec" onclick="cancelGame()">Batal</button>
+          <div class="ok" id="gameOk"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script>
-    // ⚠️ PENTING: Ganti dengan URL Web App milik Anda yang didapatkan dari Google Apps Script
-    // ⚠️ PENTING: URL ini sudah diperbarui dengan link deploy terbaru milik Anda
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
+  <!-- SCREEN 3: MEMBER PROGRESS -->
+  <div id="s-member" class="screen">
+    <div class="prog-wrap">
+      <div class="back-link" onclick="goParty()">&#x2190; Kembali ke Party</div>
+      <div class="prog-header">
+        <div class="prog-avatar" id="mAvatar"></div>
+        <div>
+          <div style="color:#FFD700;font-size:15px;font-weight:bold" id="mName">—</div>
+          <div style="color:#aaa;font-size:11px;margin-top:2px" id="mRole">—</div>
+          <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">
+            <span class="badge badge-gold" id="mNIM">—</span>
+            <span class="badge badge-gray" id="mKelas">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="section-lbl">Pilih Minggu</div>
+      <div class="week-tabs" id="weekTabs"></div>
+      <div id="weekArea"></div>
+    </div>
+  </div>
 
-    function checkCode() {
-      var kode = document.getElementById("kodeInput").value.trim();
-      if(kode === "") return;
-      
-      document.getElementById("loginPesan").style.color = "#FFD700";
-      document.getElementById("loginPesan").innerText = "Memeriksa akses kredenisal...";
-      
-      fetch(WEB_APP_URL, {
-        method: "POST",
-        mode: "no-cors", // Memotong batasan CORS dasar ekosistem Google Web App
-        body: JSON.stringify({ action: "verifyCode", kode: kode })
-      })
-      .then(() => {
-        /* Catatan Teknis: Mode 'no-cors' pada redirect Google Web App memaksa response menjadi opaque (tidak terbaca strukturnya langsung).
-          Sebagai bypass logis: Jika koneksi berhasil tanpa throw error, kita loloskan verifikasi kode ke antarmuka formulir.
-        */
-        document.getElementById("loginSection").style.display = "none";
-        document.getElementById("formSection").style.display = "block";
-        document.getElementById("judulKelompok").innerText = "QUEST LOG ACTIVATED";
-        document.getElementById("kelompokAktif").value = kode; 
-      })
-      .catch(error => {
-        document.getElementById("loginPesan").style.color = "#ff4c4c";
-        document.getElementById("loginPesan").innerText = "Koneksi ke server gagal: " + error.message;
-      });
-    }
+<script>
+  // ⚠️ PENTING: Ganti URL di bawah dengan URL deploy terbaru dari Google Apps Script Anda
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbw0Gnw4IpJM4NaX18C9ICfmQ1xb2qKwLRC0Pyr5YPOcW5eui1SbLQvUrD50MmKhWgJGeg/exec";
 
-    function submitData() {
-      var btn = document.querySelector("#formSection button");
-      var tautanGithub = document.getElementById("github").value.trim();
-      
-      if(tautanGithub === "") {
-        document.getElementById("statusPesan").innerText = "Peringatan: Tautan Commit GitHub wajib diisi!";
-        document.getElementById("statusPesan").style.color = "#ff4c4c";
-        return;
+  const PARTIES = {
+    "PARTY1-MV": { name:"PARTY 1 — IRON VANGUARD", guild:"Kelompok 1", el:"fire",    color:"#e74c3c" },
+    "PARTY2-MV": { name:"PARTY 2 — STORM ARCANE",  guild:"Kelompok 2", el:"thunder", color:"#3498db" },
+    "PARTY3-MV": { name:"PARTY 3 — EARTH TITAN",   guild:"Kelompok 3", el:"earth",   color:"#27ae60" },
+    "PARTY4-MV": { name:"PARTY 4 — SHADOW BLADE",  guild:"Kelompok 4", el:"shadow",  color:"#9b59b6" },
+    "PARTY5-MV": { name:"PARTY 5 — GOLDEN SAGE",   guild:"Kelompok 5", el:"light",   color:"#f39c12" }
+  };
+
+  const AVATAR_COLORS = ["#e74c3c","#3498db","#27ae60","#f39c12","#9b59b6"];
+
+  const ROLE_OPTIONS = [
+    { icon:"🗺️", label:"Mapper / Level Designer"     },
+    { icon:"📜", label:"Eventer / Story Writer"       },
+    { icon:"💻", label:"Programmer / JS Scripter"     },
+    { icon:"🎨", label:"Asset Creator / Pixel Artist" },
+    { icon:"🎵", label:"Sound Designer / Composer"    },
+    { icon:"🖼️", label:"UI Designer"                  },
+    { icon:"🧪", label:"QA Tester / Bug Hunter"       },
+    { icon:"📋", label:"Project Manager"              }
+  ];
+
+  let ST = { kode:null, party:null, members:[], logs:{}, gameInfo:null, activeMember:null };
+
+  const SK = k => "pq_" + ST.kode + "_" + k;
+
+  function loadLocal() {
+    try {
+      const m = localStorage.getItem(SK("members")); if(m) ST.members  = JSON.parse(m);
+      const l = localStorage.getItem(SK("logs"));    if(l) ST.logs     = JSON.parse(l);
+      const g = localStorage.getItem(SK("game"));    if(g) ST.gameInfo = JSON.parse(g);
+    } catch(e) {}
+  }
+
+  function saveLocal() {
+    try {
+      localStorage.setItem(SK("members"), JSON.stringify(ST.members));
+      localStorage.setItem(SK("logs"),    JSON.stringify(ST.logs));
+      if(ST.gameInfo) localStorage.setItem(SK("game"), JSON.stringify(ST.gameInfo));
+    } catch(e) {}
+  }
+
+  function callGAS(payload) {
+    fetch(GAS_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) }).catch(()=>{});
+  }
+
+  function callGASRead(payload) {
+    return fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type":"application/json" }
+    }).then(r => r.json()).catch(() => null);
+  }
+
+  function show(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function doLogin() {
+    const kode = document.getElementById("kodeInput").value.trim().toUpperCase();
+    const err  = document.getElementById("loginErr");
+    if (!kode) { err.textContent = "Masukkan kode party terlebih dahulu."; return; }
+    const party = PARTIES[kode];
+    if (!party) { err.textContent = "Kode tidak dikenali. Coba lagi."; return; }
+    err.textContent = "";
+    ST.kode  = kode;
+    ST.party = party;
+    loadLocal();
+    callGASRead({ action:"getMembers", kelompok: party.guild }).then(res => {
+      if (res && res.status === "success" && res.result && res.result.length) {
+        ST.members = res.result;
+        saveLocal();
       }
-
-      btn.disabled = true;
-      document.getElementById("statusPesan").style.color = "#FFD700";
-      document.getElementById("statusPesan").innerText = "Mentransmisikan data ke pusat komando...";
-      
-      var payloadData = {
-        kelompok: document.getElementById("kelompokAktif").value,
-        minggu: document.getElementById("minggu").value,
-        nama: document.getElementById("nama").value,
-        role: document.getElementById("role").value,
-        progres: document.getElementById("progres").value,
-        github: tautanGithub,
-        detail: document.getElementById("detail").value
-      };
-
-      fetch(WEB_APP_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify({ action: "saveProgress", payload: payloadData })
-      })
-      .then(() => {
-        document.getElementById("statusPesan").style.color = "#4cff4c";
-        document.getElementById("statusPesan").innerText = "Laporan sukses terkirim ke Google Sheets!";
-        document.getElementById("nama").value = "";
-        document.getElementById("role").value = "";
-        document.getElementById("progres").value = "";
-        document.getElementById("github").value = "";
-        document.getElementById("detail").value = "";
-        btn.disabled = false;
-      })
-      .catch(error => {
-        document.getElementById("statusPesan").style.color = "#ff4c4c";
-        document.getElementById("statusPesan").innerText = "Gagal mengirim data: " + error.message;
-        btn.disabled = false;
+      callGASRead({ action:"getGameInfo", kelompok: party.guild }).then(res2 => {
+        if (res2 && res2.result) ST.gameInfo = res2.result;
+        renderParty();
+        show("s-party");
       });
+    }).catch(() => { renderParty(); show("s-party"); });
+  }
+
+  function doLogout() {
+    ST = { kode:null, party:null, members:[], logs:{}, gameInfo:null, activeMember:null };
+    document.getElementById("kodeInput").value = "";
+    document.getElementById("loginErr").textContent = "";
+    show("s-login");
+  }
+
+  function drawSprite(el, element, color) {
+    const sp = {
+      fire: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
+        <rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/>
+        <rect x="20" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="66" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <ellipse cx="44" cy="28" rx="4" ry="5" fill="#111"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="#111"/>
+        <path d="M46 35 Q50 39 54 35" stroke="#111" stroke-width="2" fill="none"/>
+        <polygon points="35,10 50,2 65,10 60,25 40,25" fill="${color}" opacity=".5"/>`,
+      thunder: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
+        <rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/>
+        <rect x="22" y="46" width="13" height="22" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="65" y="46" width="13" height="22" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <ellipse cx="44" cy="28" rx="4" ry="5" fill="#111"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="#111"/>
+        <path d="M46 35 Q50 39 54 35" stroke="#111" stroke-width="2" fill="none"/>
+        <polygon points="50,4 59,22 52,22 61,40 41,22 48,22" fill="#FFD700" opacity=".9"/>`,
+      earth: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
+        <rect x="37" y="44" width="26" height="30" rx="5" fill="${color}" opacity=".8"/>
+        <rect x="20" y="48" width="15" height="20" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="65" y="48" width="15" height="20" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <ellipse cx="44" cy="28" rx="4" ry="5" fill="#111"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="#111"/>
+        <path d="M45 36 Q50 40 55 36" stroke="#111" stroke-width="2" fill="none"/>
+        <rect x="13" y="40" width="8" height="28" rx="3" fill="#8B6914"/><rect x="9" y="36" width="16" height="8" rx="3" fill="#8B6914"/>`,
+      shadow: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
+        <rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/>
+        <rect x="21" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="65" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <ellipse cx="44" cy="28" rx="5" ry="6" fill="#ddd"/><ellipse cx="56" cy="28" rx="5" ry="6" fill="#ddd"/>
+        <path d="M45 36 Q50 38 55 36" stroke="#ddd" stroke-width="2" fill="none"/>
+        <ellipse cx="50" cy="10" rx="16" ry="7" fill="${color}" opacity=".5"/>`,
+      light: `<circle cx="50" cy="30" r="18" fill="${color}" opacity=".9"/>
+        <rect x="38" y="44" width="24" height="30" rx="5" fill="${color}" opacity=".8"/>
+        <rect x="21" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="65" y="46" width="14" height="22" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="34" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <rect x="53" y="74" width="13" height="18" rx="5" fill="${color}" opacity=".7"/>
+        <ellipse cx="44" cy="28" rx="4" ry="5" fill="#333"/><ellipse cx="56" cy="28" rx="4" ry="5" fill="#333"/>
+        <path d="M46 36 Q50 40 54 36" stroke="#333" stroke-width="2" fill="none"/>
+        <circle cx="50" cy="30" r="22" fill="none" stroke="${color}" stroke-width="3" opacity=".35"/>
+        <circle cx="50" cy="30" r="28" fill="none" stroke="${color}" stroke-width="1.5" opacity=".15"/>`
+    };
+    el.innerHTML = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${sp[element]||sp.fire}</svg>`;
+  }
+
+  function renderParty() {
+    const p = ST.party;
+    document.getElementById("partyName").textContent  = p.name;
+    document.getElementById("partyClass").textContent = "Guild: " + p.guild;
+    drawSprite(document.getElementById("charSprite"), p.el, p.color);
+    renderMemberGrid();
+    renderGameInfo();
+    setTab("anggota", document.querySelector(".tab-btn"));
+  }
+
+  function renderMemberGrid() {
+    const grid = document.getElementById("memberGrid");
+    if (!ST.members.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:1.5rem 0;color:#666;font-size:12px">
+        <div style="font-size:22px;margin-bottom:8px">👥</div>
+        Data anggota belum tersedia.<br>
+        <span style="font-size:11px;color:#444">Dosen perlu mengisi data via panel admin.</span>
+      </div>`;
+      return;
     }
-  </script>
+    grid.innerHTML = ST.members.map((m, i) => {
+      const ini = m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+      const clr = AVATAR_COLORS[i % 5];
+      const hasLog = Object.keys(ST.logs[i] || {}).length > 0;
+      return `<div class="member-card" onclick="openMember(${i})">
+        <div class="mc-avatar" style="background:${clr}22;border:1.5px solid ${clr};color:${clr}">${ini}</div>
+        <div class="mc-nim">${m.nim}</div>
+        <div class="mc-name">${m.nama}</div>
+        <div class="mc-kelas">${m.kelas||""}</div>
+        <div class="mc-role">${m.jobdesk||"— Pilih role"}</div>
+        ${hasLog ? `<div style="margin-top:5px"><span class="badge badge-green">&#x2713; Ada Laporan</span></div>` : ""}
+      </div>`;
+    }).join("");
+  }
+
+  function renderGameInfo() {
+    const g = ST.gameInfo;
+    if (g) {
+      document.getElementById("gameTitleDisp").textContent = g.title || "Belum ada judul";
+      document.getElementById("gameStoryDisp").innerHTML =
+        `<div style="margin-bottom:3px"><span style="color:#777">Genre:</span> ${g.genre||"—"}</div>
+         <div style="margin-bottom:3px">${g.story||"—"}</div>
+         <div><span style="color:#777">Fitur:</span> ${g.feature||"—"}</div>`;
+    }
+  }
+
+  function setTab(tab, btn) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-anggota").style.display = tab==="anggota" ? "block" : "none";
+    document.getElementById("tab-game").style.display    = tab==="game"    ? "block" : "none";
+  }
+
+  function showGameForm() {
+    document.getElementById("gameView").style.display = "none";
+    document.getElementById("gameForm").style.display = "block";
+    if (ST.gameInfo) {
+      document.getElementById("gTitle").value   = ST.gameInfo.title   || "";
+      document.getElementById("gGenre").value   = ST.gameInfo.genre   || "";
+      document.getElementById("gStory").value   = ST.gameInfo.story   || "";
+      document.getElementById("gFeature").value = ST.gameInfo.feature || "";
+    }
+  }
+
+  function cancelGame() {
+    document.getElementById("gameForm").style.display = "none";
+    document.getElementById("gameView").style.display = "block";
+  }
+
+  function saveGame() {
+    ST.gameInfo = {
+      title:   document.getElementById("gTitle").value,
+      genre:   document.getElementById("gGenre").value,
+      story:   document.getElementById("gStory").value,
+      feature: document.getElementById("gFeature").value
+    };
+    saveLocal();
+    callGAS({ action:"saveGameInfo", payload:{ kelompok: ST.party.guild, ...ST.gameInfo }});
+    renderGameInfo();
+    cancelGame();
+    document.getElementById("gameOk").textContent = "Info game berhasil disimpan!";
+    setTimeout(() => document.getElementById("gameOk").textContent = "", 2500);
+  }
+
+  function openMember(idx) {
+    ST.activeMember = idx;
+    const m   = ST.members[idx];
+    const clr = AVATAR_COLORS[idx % 5];
+    const ini = m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+    const av  = document.getElementById("mAvatar");
+    av.textContent  = ini;
+    av.style.cssText = `background:${clr}22;border:2px solid ${clr};color:${clr};width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;flex-shrink:0`;
+    document.getElementById("mName").textContent  = m.nama;
+    document.getElementById("mNIM").textContent   = m.nim;
+    document.getElementById("mKelas").textContent = m.kelas || "";
+    if (!m.jobdesk) {
+      document.getElementById("mRole").textContent = "Role belum dipilih";
+      renderRolePicker(idx);
+    } else {
+      document.getElementById("mRole").textContent = m.jobdesk;
+      renderWeekTabs(idx);
+    }
+    show("s-member");
+  }
+
+  function goParty() { show("s-party"); }
+
+  /* ── ROLE PICKER ── */
+  function renderRolePicker(idx) {
+    const area = document.getElementById("weekArea");
+    area.innerHTML = `
+      <div style="background:#111316;border:1px solid #333;border-radius:10px;padding:1rem;margin-bottom:1rem">
+        <div class="section-lbl" style="margin-bottom:10px">Pilih role kamu dalam tim</div>
+        <div class="role-grid">
+          ${ROLE_OPTIONS.map(r => `
+            <div class="role-chip" data-role="${r.label}" onclick="selectRole(this)">
+              ${r.icon} ${r.label}
+            </div>`).join("")}
+          <div class="role-chip other-chip" data-role="__other__" onclick="selectRole(this)">
+            &#x270F;&#xFE0F; Lainnya...
+          </div>
+        </div>
+        <div class="custom-role-wrap" id="customWrap">
+          <label class="form-lbl">Tuliskan role kamu</label>
+          <input class="form-inp" id="customRoleInput" placeholder="Contoh: Music Composer / Dokumentasi" maxlength="50">
+        </div>
+        <button class="rpg-btn" style="margin-top:12px" onclick="confirmRole(${idx})">
+          &#x2705; Konfirmasi Role
+        </button>
+        <div class="err" id="roleErr"></div>
+      </div>`;
+  }
+
+  function selectRole(chip) {
+    document.querySelectorAll(".role-chip").forEach(c => c.classList.remove("selected"));
+    chip.classList.add("selected");
+    const cw = document.getElementById("customWrap");
+    if (chip.dataset.role === "__other__") {
+      cw.classList.add("show");
+      document.getElementById("customRoleInput").focus();
+    } else {
+      cw.classList.remove("show");
+    }
+  }
+
+  function confirmRole(idx) {
+    const selected = document.querySelector(".role-chip.selected");
+    const errEl    = document.getElementById("roleErr");
+    if (!selected) { errEl.textContent = "Pilih salah satu role terlebih dahulu!"; return; }
+    let role = selected.dataset.role;
+    if (role === "__other__") {
+      role = (document.getElementById("customRoleInput").value || "").trim();
+      if (!role) { errEl.textContent = "Isi role kamu terlebih dahulu!"; return; }
+    }
+    errEl.textContent = "";
+    ST.members[idx].jobdesk = role;
+    saveLocal();
+    callGAS({ action:"saveMembers", kelompok: ST.party.guild, members: ST.members });
+    document.getElementById("mRole").textContent = role;
+    renderMemberGrid();
+    renderWeekTabs(idx);
+  }
+
+  /* ── WEEK TABS & FORM ── */
+  function renderWeekTabs(idx) {
+    const logs  = ST.logs[idx] || {};
+    const weeks = ["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];
+    const tabs  = document.getElementById("weekTabs");
+    tabs.innerHTML = weeks.map(w => {
+      const done = !!logs[w];
+      return `<button class="wt ${done?"done":""}" data-week="${w}" onclick="selectWeek('${w}',${idx},this)">${w}${done?" &#x2713;":""}</button>`;
+    }).join("");
+    selectWeek("Minggu 1", idx, tabs.querySelector(".wt"));
+  }
+
+  function selectWeek(week, idx, btn) {
+    document.querySelectorAll(".wt").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const log = (ST.logs[idx] || {})[week];
+    const area = document.getElementById("weekArea");
+    const clr  = AVATAR_COLORS[idx % 5];
+    if (log) {
+      const pct = parseInt(log.progres) || 0;
+      area.innerHTML = `
+        <div class="section-lbl" style="margin-bottom:8px">Laporan ${week}</div>
+        <div class="log-box">
+          <div class="log-week">${week} — ${log.timestamp}</div>
+          <div style="display:flex;align-items:center;gap:10px;margin:7px 0">
+            <div style="flex:1"><div class="pbar-wrap"><div class="pbar-fill" style="width:${pct}%;background:${clr}"></div></div></div>
+            <div style="font-size:13px;color:${clr};font-weight:bold">${pct}%</div>
+          </div>
+          <div class="log-detail">${log.detail||"—"}</div>
+          <div class="log-meta">GitHub: <a href="${log.github}" target="_blank" style="color:#3498db">${log.github||"—"}</a></div>
+          <div class="locked-badge">&#x1F512; Laporan terkunci</div>
+        </div>`;
+    } else {
+      area.innerHTML = `
+        <div class="section-lbl" style="margin-bottom:10px">Isi Laporan ${week}</div>
+        <div style="margin-bottom:10px">
+          <label class="form-lbl">Progres penyelesaian (%)</label>
+          <input class="form-inp" type="number" id="inpPct" min="0" max="100" placeholder="0 – 100" oninput="updBar(this.value,'${clr}')">
+          <div class="pbar-wrap" style="margin-top:7px"><div class="pbar-fill" id="progBar" style="width:0%;background:${clr}"></div></div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label class="form-lbl">Link commit GitHub (wajib)</label>
+          <input class="form-inp" type="url" id="inpGH" placeholder="https://github.com/...">
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="form-lbl">Detail pekerjaan minggu ini</label>
+          <textarea class="form-inp" id="inpDetail" rows="4" placeholder="Tuliskan apa yang kamu kerjakan minggu ini..."></textarea>
+        </div>
+        <button class="rpg-btn" onclick="submitLog('${week}',${idx})" style="margin-top:4px">&#x1F4E4; Kirim Laporan</button>
+        <div class="err" id="subErr"></div>
+        <div class="ok"  id="subOk"></div>`;
+    }
+  }
+
+  function updBar(val, clr) {
+    const p = Math.min(100, Math.max(0, parseInt(val)||0));
+    document.getElementById("progBar").style.width = p + "%";
+  }
+
+  function submitLog(week, idx) {
+    const gh     = (document.getElementById("inpGH").value     || "").trim();
+    const pct    = (document.getElementById("inpPct").value    || "").trim();
+    const detail = (document.getElementById("inpDetail").value || "").trim();
+    const errEl  = document.getElementById("subErr");
+    const okEl   = document.getElementById("subOk");
+    if (!gh)  { errEl.textContent = "Link GitHub wajib diisi!";    return; }
+    if (!pct) { errEl.textContent = "Isi persentase progres!"; return; }
+    errEl.textContent = "";
+    okEl.textContent  = "Mengirim laporan...";
+    const ts = new Date().toLocaleString("id-ID");
+    if (!ST.logs[idx]) ST.logs[idx] = {};
+    ST.logs[idx][week] = { progres:pct, github:gh, detail, timestamp:ts };
+    saveLocal();
+    const m = ST.members[idx];
+    callGAS({
+      action: "saveProgress",
+      payload: {
+        kelompok: ST.party.guild,
+        minggu:   week,
+        nim:      m.nim,
+        nama:     m.nama,
+        role:     m.jobdesk,
+        progres:  pct,
+        github:   gh,
+        detail
+      }
+    });
+    renderMemberGrid();
+    renderWeekTabs(idx);
+    const activeBtn = document.querySelector(`.wt[data-week="${week}"]`);
+    if (activeBtn) selectWeek(week, idx, activeBtn);
+  }
+</script>
 </body>
 </html>
