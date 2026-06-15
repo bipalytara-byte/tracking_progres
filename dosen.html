@@ -124,7 +124,8 @@
         <div class="sec-lbl">Ringkasan progres per kelompok</div>
         <div id="overviewCards"></div>
         <div style="text-align:right;margin-top:10px">
-          <button class="btn btn-sec btn-sm" onclick="refreshData()">&#x21BB; Refresh Data dari Sheets</button>
+          <button class="btn btn-sec btn-sm" onclick="refreshData()">&#x21BB; Refresh</button>
+          <button class="btn btn-gold btn-sm" onclick="exportAllPDF()">&#x1F4C4; Export Semua PDF</button>
         </div>
       </div>
 
@@ -170,6 +171,7 @@
         </div>
         <div style="text-align:right;margin-top:10px">
           <button class="btn btn-sec btn-sm" onclick="refreshData()">&#x21BB; Refresh</button>
+          <button class="btn btn-gold btn-sm" onclick="exportPDFKelompok(DST.filterKelompok==='semua'?'Kelompok 1':DST.filterKelompok)">&#x1F4C4; Export PDF</button>
         </div>
       </div>
 
@@ -600,5 +602,62 @@
     setTimeout(() => document.getElementById("kriteriaOk").textContent = "", 3000);
   }
 </script>
+
+<script>
+function exportPDFKelompok(kelompok) {
+  var p        = PARTIES.find(function(x){ return x.key === kelompok; }) || {};
+  var members  = (DST.allMembers[kelompok] || []).filter(function(m){ return m.nama; });
+  var logs     = DST.allProgress.filter(function(l){ return l.kelompok === kelompok; });
+  var game     = null;
+  var weeks    = ["Minggu 1","Minggu 2","Minggu 3","Minggu 4"];
+  var COLORS   = ["#e74c3c","#3498db","#27ae60","#f39c12","#9b59b6"];
+  var now      = new Date().toLocaleString("id-ID");
+
+  var grouped = {};
+  logs.forEach(function(l) {
+    var key = l.nim || l.nama;
+    if (!grouped[key]) grouped[key] = { nim:l.nim||"", nama:l.nama, role:l.role, weeks:{} };
+    grouped[key].weeks[l.minggu] = parseInt((l.progres||"0").replace("%",""))||0;
+  });
+
+  var membersHTML = members.map(function(m, i) {
+    var clr  = COLORS[i % COLORS.length];
+    var mLog = grouped[m.nim || m.nama] || { weeks:{} };
+    var weekRows = weeks.map(function(w) {
+      var pct = mLog.weeks[w];
+      if (pct === undefined) return "<tr><td>" + w + "</td><td colspan=\"3\" style=\"color:#999;font-style:italic\">Belum ada laporan</td></tr>";
+      var barClr = pct >= 75 ? "#27ae60" : pct >= 40 ? "#f39c12" : "#e74c3c";
+      var logEntry = logs.find(function(l){ return l.minggu===w && (l.nim===m.nim||l.nama===m.nama); }) || {};
+      return "<tr><td>" + w + "</td><td><div style=\"display:flex;align-items:center;gap:8px\"><div style=\"width:80px;height:6px;background:#eee;border-radius:3px\"><div style=\"width:" + pct + "%;height:100%;background:" + barClr + ";border-radius:3px\"></div></div><b>" + pct + "%</b></div></td><td style=\"font-size:11px\">" + (logEntry.detail||"—") + "</td><td style=\"font-size:11px\"><a href=\"" + (logEntry.github||"#") + "\" style=\"color:#3498db\">" + (logEntry.github||"—") + "</a></td></tr>";
+    }).join("");
+
+    var wVals = weeks.map(function(w){ return mLog.weeks[w]; }).filter(function(v){ return v !== undefined; });
+    var avg = wVals.length ? Math.round(wVals.reduce(function(a,b){return a+b;},0)/wVals.length) : 0;
+    var avgClr = avg >= 75 ? "#27ae60" : avg >= 40 ? "#f39c12" : "#e74c3c";
+    var ini = m.nama.split(" ").slice(0,2).map(function(w){return w[0];}).join("").toUpperCase();
+
+    return "<div style=\"border:1px solid #ddd;border-left:4px solid " + clr + ";border-radius:8px;padding:16px;margin-bottom:16px;page-break-inside:avoid\"><div style=\"display:flex;align-items:center;gap:12px;margin-bottom:12px\"><div style=\"width:40px;height:40px;border-radius:50%;background:" + clr + "22;border:2px solid " + clr + ";display:flex;align-items:center;justify-content:center;font-weight:bold;color:" + clr + ";font-size:14px;flex-shrink:0\">" + ini + "</div><div><div style=\"font-weight:bold;font-size:14px\">" + m.nama + "</div><div style=\"font-size:12px;color:#666\">" + (m.nim||"") + " &bull; " + (m.kelas||"") + " &bull; <span style=\"color:" + clr + "\">" + (m.jobdesk||"—") + "</span></div></div><div style=\"margin-left:auto;text-align:right\"><div style=\"font-size:11px;color:#999\">Avg Progres</div><div style=\"font-size:18px;font-weight:bold;color:" + avgClr + "\">" + avg + "%</div></div></div><table style=\"width:100%;border-collapse:collapse;font-size:12px\"><thead><tr style=\"background:#f5f5f5\"><th style=\"padding:6px 8px;text-align:left;width:80px\">Minggu</th><th style=\"padding:6px 8px;text-align:left;width:130px\">Progres</th><th style=\"padding:6px 8px;text-align:left\">Detail Pekerjaan</th><th style=\"padding:6px 8px;text-align:left;width:160px\">GitHub</th></tr></thead><tbody>" + weekRows + "</tbody></table></div>";
+  }).join("") || "<p style=\"color:#999;font-style:italic\">Belum ada anggota terdaftar.</p>";
+
+  var html = "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"UTF-8\"><title>Laporan " + kelompok + " — Portal Quest</title><style>body{font-family:Arial,sans-serif;color:#222;margin:0;padding:24px;font-size:13px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:16px 0 8px;color:#333;border-bottom:1px solid #eee;padding-bottom:4px}table td,table th{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:top}@media print{body{padding:0}.no-print{display:none}@page{margin:15mm;size:A4}}</style></head><body>"
+    + "<button class=\"no-print\" onclick=\"window.print()\" style=\"margin-bottom:16px;padding:8px 20px;background:#FFD700;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px\">&#x1F5A8; Print / Save PDF</button>"
+    + "<div style=\"border-bottom:3px solid #1a1c1e;padding-bottom:12px;margin-bottom:16px\"><div style=\"font-size:11px;color:#999;margin-bottom:4px\">PORTAL QUEST — LAPORAN PROGRES PROJECT GAME (REKAP DOSEN)</div><h1>" + kelompok + " — " + (p.label||"") + "</h1><div style=\"font-size:12px;color:#666\">Dicetak: " + now + "</div></div>"
+    + "<h2>&#x1F465; Laporan Progres Anggota</h2>"
+    + membersHTML
+    + "<div style=\"margin-top:24px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center\">Portal Quest — RPG Maker MV Project Tracker &nbsp;|&nbsp; " + now + "</div>"
+    + "</body></html>";
+
+  var win = window.open("", "_blank");
+  win.document.write(html);
+  win.document.close();
+}
+
+function exportAllPDF() {
+  PARTIES.forEach(function(p, idx) {
+    setTimeout(function(){ exportPDFKelompok(p.key); }, idx * 300);
+  });
+}
+</script>
+
 </body>
 </html>
