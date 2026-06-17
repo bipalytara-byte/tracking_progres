@@ -215,10 +215,12 @@
   function callGAS(payload) {
     // Kirim via GET agar data bisa masuk ke Sheets tanpa CORS issue
     const params = new URLSearchParams({ data: JSON.stringify(payload) });
-    fetch(GAS_URL + "?" + params.toString(), { method:"GET", redirect:"follow" })
+    return fetch(GAS_URL + "?" + params.toString(), { method:"GET", redirect:"follow" })
+      .then(r => r.json())
       .catch(() => {
         // Fallback no-cors
         fetch(GAS_URL, { method:"POST", mode:"no-cors", body: JSON.stringify(payload) }).catch(()=>{});
+        return null;
       });
   }
 
@@ -296,13 +298,34 @@
     const savedCrit = localStorage.getItem("dosen_criteria");
     DST.criteria = savedCrit ? JSON.parse(savedCrit) : defaultCriteria();
 
+    // Render dulu pakai localStorage, lalu refresh dari GAS
+    renderOverview();
+    setTab("overview", document.querySelector(".nav-tab"));
+
+    // Load semua members dari GAS di background
+    PARTIES.forEach(p => {
+      callGASRead({ action:"getMembers", kelompok: p.key }).then(res => {
+        if (res && res.result && res.result.length) {
+          DST.allMembers[p.key] = res.result;
+          localStorage.setItem("dosen_members_" + p.key, JSON.stringify(res.result));
+          renderOverview();
+        }
+      }).catch(()=>{});
+    });
+
+    // Load kriteria dari GAS
+    callGASRead({ action:"getCriteria" }).then(res => {
+      if (res && res.result) {
+        DST.criteria = res.result;
+        localStorage.setItem("dosen_criteria", JSON.stringify(DST.criteria));
+      }
+    }).catch(()=>{});
+
+    // Load semua progress dari GAS
     callGASRead({ action:"getAllProgress" }).then(res => {
       if (res && res.result) DST.allProgress = res.result;
       renderOverview();
     }).catch(() => renderOverview());
-
-    renderOverview();
-    setTab("overview", document.querySelector(".nav-tab"));
   }
 
   function refreshData() {
@@ -495,8 +518,25 @@
     // Kirim ke GAS Sheets — ini sumber kebenaran utama (cross-device)
     callGAS({ action:"saveMembers", kelompok, members });
 
-    document.getElementById("anggotaOk").textContent = "✓ Data anggota " + kelompok + " disimpan! Mahasiswa bisa login sekarang.";
-    setTimeout(() => document.getElementById("anggotaOk").textContent = "", 4000);
+    document.getElementById("anggotaOk").textContent = "⏳ Menyimpan ke Google Sheets...";
+    // Kirim ke GAS dan verifikasi tersimpan
+    const params = new URLSearchParams({ data: JSON.stringify({ action:"saveMembers", kelompok, members }) });
+    fetch(GAS_URL + "?" + params.toString(), { method:"GET", redirect:"follow" })
+      .then(r => r.json())
+      .then(res => {
+        if (res && res.status === "success") {
+          document.getElementById("anggotaOk").textContent = "✓ Data anggota " + kelompok + " berhasil disimpan! Mahasiswa bisa login sekarang.";
+        } else {
+          document.getElementById("anggotaOk").textContent = "⚠️ Tersimpan lokal. Cek koneksi GAS.";
+        }
+        setTimeout(() => document.getElementById("anggotaOk").textContent = "", 5000);
+      })
+      .catch(() => {
+        // Fallback no-cors
+        fetch(GAS_URL, { method:"POST", mode:"no-cors", body: JSON.stringify({ action:"saveMembers", kelompok, members }) }).catch(()=>{});
+        document.getElementById("anggotaOk").textContent = "⚠️ Tersimpan lokal saja. Cek koneksi internet.";
+        setTimeout(() => document.getElementById("anggotaOk").textContent = "", 5000);
+      });
     renderOverview();
   }
 

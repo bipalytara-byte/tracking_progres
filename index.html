@@ -210,15 +210,19 @@ function doLogin(){
   if(!party){err.textContent="Kode tidak dikenali.";return;}
   err.style.color="var(--gold)";err.textContent="Memuat data...";
   ST.kode=kode;ST.party=party;loadLocal();
+  // Langsung tampilkan dulu pakai data localStorage (kalau ada)
+  err.textContent="";renderParty();show("s-party");
+  document.getElementById("footerNav").style.display="flex";
+  document.getElementById("btnExport").style.display="inline-block";
+  // Lalu refresh dari GAS di background
+  err.style.color="var(--gold)";err.textContent="Memuat data terbaru...";
   callGASRead({action:"getMembers",kelompok:party.guild}).then(res=>{
-    if(res&&res.status==="success"&&res.result&&res.result.length){ST.members=res.result;saveLocal();}
+    if(res&&res.status==="success"&&res.result&&res.result.length){ST.members=res.result;saveLocal();renderMemberGrid();}
     return callGASRead({action:"getGameInfo",kelompok:party.guild});
   }).then(res2=>{
-    if(res2&&res2.result){ST.gameInfo=res2.result;saveLocal();}
-    err.textContent="";renderParty();show("s-party");
-    document.getElementById("footerNav").style.display="flex";
-    document.getElementById("btnExport").style.display="inline-block";
-  }).catch(()=>{err.textContent="";renderParty();show("s-party");document.getElementById("footerNav").style.display="flex";});
+    if(res2&&res2.result){ST.gameInfo=res2.result;saveLocal();renderGameInfo();}
+    err.textContent="";
+  }).catch(()=>{err.textContent="";});
 }
 
 function doLogout(){
@@ -248,7 +252,7 @@ function renderMemberGrid(){
   grid.innerHTML=ST.members.map((m,i)=>{
     const ini=m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
     const clr=AVATAR_COLORS[i%5];const bg=AVATAR_BG[i%5];
-    const hasLog=Object.keys(ST.logs[i]||{}).length>0;
+    const hasLog=ST.logs&&ST.logs[i]&&Object.keys(ST.logs[i]).length>0;
     return `<div class="member-card" onclick="openMember(${i})"><div class="mc-avatar" style="background:${bg};border:2px solid ${clr};color:${clr}">${ini}</div><div class="mc-nim">${m.nim}</div><div class="mc-name">${m.nama}</div><div class="mc-kelas">${m.kelas||""}</div><div class="mc-role">${m.jobdesk||"— Pilih role"}</div>${hasLog?`<div style="margin-top:5px"><span class="chip chip-green" style="font-size:11px">&#x2713; Ada Laporan</span></div>`:""}</div>`;
   }).join("");
 }
