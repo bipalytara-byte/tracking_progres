@@ -137,7 +137,7 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
         <table class="prog-table">
           <thead><tr>
             <th>Kelompok</th><th>NIM</th><th>Nama</th><th>Role</th>
-            <th id="thWeeks">Minggu</th>
+            
             <th>Avg</th>
           </tr></thead>
           <tbody id="progBody"></tbody>
@@ -210,7 +210,7 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
 </div>
 
 <script>
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyg7awq1E6S3Qp_d1pCPIyW8bn9kuxrrPsLenVJaNRekAPsb5jNbsO4Gakk250V8Fxr/exec";
+const GAS_URL = "GANTI_DENGAN_URL_GAS_ANDA";
 
 const PARTIES = [
   { key:"Kelompok 1", color:"#e74c3c", label:"Iron Vanguard",  kode:"PARTY1-MV" },
@@ -277,34 +277,47 @@ function loadDashboard() {
 }
 
 function refreshAll() {
-  // Load config
+  // Load config DULU, baru load data lain (agar jumlahMinggu sudah benar sebelum render)
   gasGet({action:"getConfig"}).then(res => {
     if (res && res.result) {
       DST.config = res.result;
       DST.jumlahMinggu = parseInt(res.result.jumlah_minggu) || 8;
-      // Isi form config
       if (document.getElementById("cfgMatkul"))   document.getElementById("cfgMatkul").value   = res.result.nama_matkul || "";
       if (document.getElementById("cfgSemester")) document.getElementById("cfgSemester").value = res.result.semester    || "";
       if (document.getElementById("cfgMinggu"))   document.getElementById("cfgMinggu").value   = res.result.jumlah_minggu || 8;
     }
-  });
+    // Setelah config selesai, baru load data lain
+    _loadDataAfterConfig();
+  }).catch(() => _loadDataAfterConfig());
+}
 
-  // Load semua members dari GAS
+function _loadDataAfterConfig() {
+  function reRenderAll() {
+    renderOverview();
+    // Re-render tabel hanya jika tab progres sedang aktif
+    if (document.getElementById("tab-progres").style.display !== "none") {
+      buildProgPartyFilter();
+      renderProgTable();
+    }
+    if (document.getElementById("tab-feedback").style.display !== "none") {
+      buildFbMingguSel();
+      renderFeedbackTab();
+    }
+  }
+
   let pending = PARTIES.length;
   PARTIES.forEach(p => {
     gasGet({action:"getMembers", kelompok:p.key}).then(res => {
       if (res && res.result) DST.allMembers[p.key] = res.result;
       else if (!DST.allMembers[p.key]) DST.allMembers[p.key] = [];
       pending--;
-      if (pending === 0) { renderOverview(); renderProgTable(); }
-    }).catch(() => { pending--; if(pending===0){renderOverview();renderProgTable();} });
+      if (pending === 0) reRenderAll();
+    }).catch(() => { pending--; if (pending === 0) reRenderAll(); });
   });
 
-  // Load semua progress
   gasGet({action:"getAllProgress"}).then(res => {
     if (res && res.result) DST.allProgress = res.result;
-    renderOverview();
-    renderProgTable();
+    reRenderAll();
   });
 }
 
@@ -472,19 +485,11 @@ function filterProg(kelompok, btn) {
 
 function renderProgTable() {
   const weeks = Array.from({length:DST.jumlahMinggu}, (_,i) => "Minggu "+(i+1));
-  // Update header minggu
-  const thW = document.getElementById("thWeeks");
-  if (thW) {
-    const parent = thW.parentNode;
-    // Remove old week headers
-    const allTh = parent.querySelectorAll("th");
-    allTh.forEach((th,i) => { if(i>=4 && i<allTh.length-1) th.remove(); });
-    weeks.forEach((w,i) => {
-      const th = document.createElement("th");
-      th.textContent = "M" + (i+1);
-      parent.insertBefore(th, parent.children[4]);
-    });
-    thW.remove();
+  // Rebuild header bersih setiap kali render
+  const thead = document.querySelector(".prog-table thead tr");
+  if (thead) {
+    const weekCols = Array.from({length:weeks.length}, (_,i) => `<th>M${i+1}</th>`).join("");
+    thead.innerHTML = `<th>Kelompok</th><th>NIM</th><th>Nama</th><th>Role</th>${weekCols}<th>Avg</th>`;
   }
 
   const logs = DST.filterKelompok === "semua"
@@ -650,6 +655,9 @@ function simpanConfig() {
       DST.jumlahMinggu = minggu;
       okEl.style.color="var(--a3)"; okEl.textContent="✅ Konfigurasi berhasil disimpan!";
       document.getElementById("cfgKodeDosen").value="";
+      // Re-render tabel tracking dan feedback minggu jika sedang aktif
+      buildFbMingguSel();
+      if (document.getElementById("tab-progres").style.display !== "none") { buildProgPartyFilter(); renderProgTable(); }
     } else {
       errEl.textContent="Gagal menyimpan. Coba lagi.";
     }
