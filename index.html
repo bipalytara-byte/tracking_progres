@@ -270,6 +270,15 @@ function doLogin() {
     }
     btn.disabled = false;
     btn.innerHTML = "▶ Akses Portal";
+    // Log akses ke GAS (fire and forget)
+    gasPost({
+      action: "logAkses",
+      kelompok: kode,
+      guild: party.guild,
+      userAgent: navigator.userAgent.substring(0, 120),
+      ipHint: new Date().toLocaleString("id-ID"),
+      status: "login_berhasil"
+    });
     renderParty(); show("s-party");
     document.getElementById("footerNav").style.display = "flex";
   }).catch(() => {
