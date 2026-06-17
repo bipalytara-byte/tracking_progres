@@ -646,7 +646,8 @@ function simpanConfig() {
   errEl.textContent=""; btn.disabled=true; btn.innerHTML='<span class="loading-spin"></span>Menyimpan...';
 
   const cfg = {nama_matkul:matkul, semester, jumlah_minggu:minggu};
-  if (kodeDosen) cfg.kode_dosen = kodeDosen;
+  // Hanya kirim kode_dosen jika benar-benar diisi (hindari overwrite dengan kosong)
+  if (kodeDosen && kodeDosen.trim() !== "") cfg.kode_dosen = kodeDosen.trim();
 
   gasGet({action:"saveConfig", config:cfg}).then(res => {
     btn.disabled=false; btn.innerHTML="💾 Simpan Konfigurasi";
