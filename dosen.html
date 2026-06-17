@@ -96,7 +96,9 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
         <button class="nav-tab" onclick="setTab('anggota',this)">👥 Data Anggota</button>
         <button class="nav-tab" onclick="setTab('progres',this)">📋 Tracking</button>
         <button class="nav-tab" onclick="setTab('feedback',this)">💬 Feedback</button>
+        <button class="nav-tab" onclick="setTab('logakses',this)">🔍 Log Akses</button>
         <button class="nav-tab" onclick="setTab('config',this)">⚙️ Konfigurasi</button>
+        <a href="leaderboard.html" target="_blank" class="nav-tab" style="text-decoration:none">🏆 Leaderboard</a>
       </div>
       <button onclick="dosenLogout()" style="padding:6px 12px;background:transparent;color:var(--ink3);border:2px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif">Logout</button>
     </div>
@@ -168,6 +170,27 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
       <div id="feedbackArea"></div>
     </div>
 
+    <!-- LOG AKSES -->
+    <div id="tab-logakses" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <div class="rpg-h3" style="margin-bottom:0">Riwayat login mahasiswa</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select class="m-sel" style="width:auto;min-width:160px" id="logKelompokSel" onchange="renderLogAkses()">
+            <option value="">Semua Kelompok</option>
+            <option value="PARTY1-MV">Kelompok 1 — Iron Vanguard</option>
+            <option value="PARTY2-MV">Kelompok 2 — Storm Arcane</option>
+            <option value="PARTY3-MV">Kelompok 3 — Earth Titan</option>
+            <option value="PARTY4-MV">Kelompok 4 — Shadow Blade</option>
+            <option value="PARTY5-MV">Kelompok 5 — Golden Sage</option>
+          </select>
+          <button class="btn btn-sec btn-sm" onclick="loadLogAkses()">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="logAksesArea">
+        <div style="text-align:center;padding:2rem;color:var(--ink3)">Klik Refresh untuk memuat log.</div>
+      </div>
+    </div>
+
     <!-- KONFIGURASI -->
     <div id="tab-config" style="display:none">
       <div class="box">
@@ -224,6 +247,7 @@ let DST = {
   allMembers:  {},
   allProgress: [],
   feedbacks:   {},
+  logAkses:    [],
   config:      {},
   filterKelompok: "semua",
   jumlahMinggu: 8
@@ -264,7 +288,7 @@ function dosenLogin() {
 }
 
 function dosenLogout() {
-  DST = {allMembers:{},allProgress:[],feedbacks:{},config:{},filterKelompok:"semua",jumlahMinggu:8};
+  DST = {allMembers:{},allProgress:[],feedbacks:{},logAkses:[],config:{},filterKelompok:"semua",jumlahMinggu:8};
   document.getElementById("dosenKode").value = "";
   show("s-login");
 }
@@ -325,12 +349,13 @@ function _loadDataAfterConfig() {
 function setTab(tab, btn) {
   document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  ["overview","anggota","progres","feedback","config"].forEach(t => {
+  ["overview","anggota","progres","feedback","logakses","config"].forEach(t => {
     document.getElementById("tab-"+t).style.display = t === tab ? "block" : "none";
   });
   if (tab === "anggota")  loadAndRenderAnggota();
   if (tab === "progres")  { buildProgPartyFilter(); renderProgTable(); }
   if (tab === "feedback") { buildFbMingguSel(); renderFeedbackTab(); }
+  if (tab === "logakses") loadLogAkses();
   if (tab === "config")   renderConfigTab();
 }
 
@@ -664,6 +689,76 @@ function simpanConfig() {
     }
     setTimeout(()=>okEl.textContent="",4000);
   }).catch(()=>{ btn.disabled=false; btn.innerHTML="💾 Simpan Konfigurasi"; errEl.textContent="Gagal konek server."; });
+}
+
+// ── LOG AKSES ─────────────────────────────────────────────────
+function loadLogAkses() {
+  const area = document.getElementById("logAksesArea");
+  area.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--ink3)"><span class="loading-spin"></span> Memuat log...</div>`;
+  const filterKelompok = document.getElementById("logKelompokSel").value;
+  const payload = {action:"getLogAkses"};
+  if (filterKelompok) payload.kelompok = filterKelompok;
+  gasGet(payload).then(res => {
+    if (res && res.result) { DST.logAkses = res.result; renderLogAkses(); }
+    else area.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--ink3)">Belum ada log akses.</div>`;
+  }).catch(() => {
+    area.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--a1)">Gagal memuat log. Cek koneksi.</div>`;
+  });
+}
+
+function renderLogAkses() {
+  const area    = document.getElementById("logAksesArea");
+  const filter  = document.getElementById("logKelompokSel").value;
+  const logs    = filter ? DST.logAkses.filter(l => l.kelompok === filter) : DST.logAkses;
+  const pcolor  = {"PARTY1-MV":"#e74c3c","PARTY2-MV":"#3498db","PARTY3-MV":"#27ae60","PARTY4-MV":"#9b59b6","PARTY5-MV":"#f39c12"};
+  const pguild  = {"PARTY1-MV":"Kelompok 1","PARTY2-MV":"Kelompok 2","PARTY3-MV":"Kelompok 3","PARTY4-MV":"Kelompok 4","PARTY5-MV":"Kelompok 5"};
+
+  if (!logs.length) {
+    area.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--ink3)">Belum ada log akses${filter?" untuk kelompok ini":""}.${!DST.logAkses.length?" Klik Refresh untuk memuat.":""}</div>`;
+    return;
+  }
+
+  // Hitung statistik
+  const totalLogin  = logs.length;
+  const uniqueDays  = new Set(logs.map(l => (l.waktu||"").split(",")[0])).size;
+  const kelompokCount = {};
+  logs.forEach(l => { kelompokCount[l.kelompok] = (kelompokCount[l.kelompok]||0)+1; });
+
+  area.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1rem">
+      <div class="stat-card"><div class="stat-num" style="color:var(--a2);font-size:20px">${totalLogin}</div><div class="stat-lbl">Total Login</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--a3);font-size:20px">${uniqueDays}</div><div class="stat-lbl">Hari Aktif</div></div>
+      ${!filter ? Object.entries(kelompokCount).map(([k,v])=>`<div class="stat-card"><div class="stat-num" style="color:${pcolor[k]||"#888"};font-size:20px">${v}</div><div class="stat-lbl">${pguild[k]||k}</div></div>`).join("") : ""}
+    </div>
+    <div class="box" style="padding:0;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--parch3)">
+          <th style="padding:8px 10px;text-align:left;font-family:'Cinzel',serif;font-size:10px;color:var(--ink3);letter-spacing:.5px;border-bottom:2px solid var(--border)">#</th>
+          <th style="padding:8px 10px;text-align:left;font-family:'Cinzel',serif;font-size:10px;color:var(--ink3);letter-spacing:.5px;border-bottom:2px solid var(--border)">Waktu</th>
+          <th style="padding:8px 10px;text-align:left;font-family:'Cinzel',serif;font-size:10px;color:var(--ink3);letter-spacing:.5px;border-bottom:2px solid var(--border)">Kelompok</th>
+          <th style="padding:8px 10px;text-align:left;font-family:'Cinzel',serif;font-size:10px;color:var(--ink3);letter-spacing:.5px;border-bottom:2px solid var(--border)">Guild</th>
+          <th style="padding:8px 10px;text-align:left;font-family:'Cinzel',serif;font-size:10px;color:var(--ink3);letter-spacing:.5px;border-bottom:2px solid var(--border)">Browser / Device</th>
+          <th style="padding:8px 10px;text-align:left;font-family:'Cinzel',serif;font-size:10px;color:var(--ink3);letter-spacing:.5px;border-bottom:2px solid var(--border)">Status</th>
+        </tr></thead>
+        <tbody>
+          ${logs.map((l,i) => {
+            const clr = pcolor[l.kelompok]||"#888";
+            const ua  = (l.user_agent||"").substring(0,60);
+            const isMobile = /Mobile|Android|iPhone/i.test(l.user_agent||"");
+            const browser  = /Chrome/i.test(l.user_agent||"") ? "Chrome" : /Firefox/i.test(l.user_agent||"") ? "Firefox" : /Safari/i.test(l.user_agent||"") ? "Safari" : "Browser";
+            return `<tr style="border-bottom:1px solid var(--parch3)">
+              <td style="padding:7px 10px;color:var(--ink3);font-size:11px">${i+1}</td>
+              <td style="padding:7px 10px;color:var(--ink2);white-space:nowrap">${l.waktu||"—"}</td>
+              <td style="padding:7px 10px"><span style="color:${clr};font-weight:bold;font-size:11px">${l.kelompok||"—"}</span></td>
+              <td style="padding:7px 10px;color:var(--ink3);font-size:11px">${l.guild||"—"}</td>
+              <td style="padding:7px 10px;color:var(--ink3);font-size:11px" title="${l.user_agent||""}">${isMobile?"📱":"💻"} ${browser}</td>
+              <td style="padding:7px 10px"><span style="background:#e3f5ec;color:#277a50;border:1.5px solid var(--a3);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700">${l.status||"login"}</span></td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+    <div style="text-align:right;margin-top:8px;font-size:11px;color:var(--ink3)">Menampilkan ${logs.length} entri terbaru</div>`;
 }
 
 // ── EXPORT PDF ────────────────────────────────────────────────
