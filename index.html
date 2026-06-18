@@ -473,7 +473,7 @@ function doVerifyPin() {
 
   gasGet({
     action: "verifyPin",
-    kelompok: ST.kode,
+    kelompok: ST.party.guild,
     guild:    ST.party.guild,
     nim:      m.nim || "",
     nama:     m.nama,
