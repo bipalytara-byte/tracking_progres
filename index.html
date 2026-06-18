@@ -146,6 +146,30 @@ textarea.rpg-input{resize:vertical;margin-bottom:0}
   </div>
 </div>
 
+<!-- PIN VERIFY -->
+<div id="s-pin" class="screen">
+  <div class="wrap">
+    <div class="back-link" onclick="goParty()">← Kembali ke Party</div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div id="pinAvatar" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin:0 auto 10px"></div>
+      <div class="rpg-h2" id="pinName">—</div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:3px" id="pinRole">—</div>
+    </div>
+    <div class="parch-card" style="margin-top:0">
+      <div style="font-size:28px;text-align:center;margin-bottom:.5rem">🔐</div>
+      <div class="rpg-h2" style="text-align:center;margin-bottom:4px">Verifikasi PIN</div>
+      <div style="font-size:13px;color:var(--ink3);text-align:center;margin-bottom:1.25rem">Masukkan PIN pribadimu untuk mengakses laporan</div>
+      <input class="rpg-input" type="password" id="pinInput" placeholder="Masukkan PIN" maxlength="12"
+        inputmode="numeric" onkeydown="if(event.key==='Enter')doVerifyPin()" autocomplete="off">
+      <button class="btn btn-sky" id="btnVerifyPin" onclick="doVerifyPin()">🔓 Verifikasi</button>
+      <div class="err" id="pinErr"></div>
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:12px;color:var(--ink3);text-align:center">
+        Lupa PIN? Hubungi dosen untuk reset.
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MEMBER -->
 <div id="s-member" class="screen">
   <div class="wrap">
@@ -199,6 +223,7 @@ let ST = {
   kode:null, party:null,
   members:[], logs:{}, feedbacks:{},
   gameInfo:null, activeMember:null,
+  verifiedMembers:{},
   jumlahMinggu:8, config:{}
 };
 
@@ -290,7 +315,7 @@ function doLogin() {
 }
 
 function doLogout() {
-  ST = {kode:null,party:null,members:[],logs:{},feedbacks:{},gameInfo:null,activeMember:null,jumlahMinggu:ST.jumlahMinggu,config:ST.config};
+  ST = {kode:null,party:null,members:[],logs:{},feedbacks:{},gameInfo:null,activeMember:null,verifiedMembers:{},jumlahMinggu:ST.jumlahMinggu,config:ST.config};
   document.getElementById("kodeInput").value = "";
   document.getElementById("loginErr").textContent = "";
   document.getElementById("footerNav").style.display = "none";
@@ -349,10 +374,14 @@ function renderMemberGrid() {
     const memberLogs = ST.logs[memberKey] || {};
     const doneCount = Object.keys(memberLogs).length;
     const totalW = ST.jumlahMinggu;
+    const verified = ST.verifiedMembers[i];
+    const pinBadge = m.hasPin
+      ? `<span style="font-size:10px;color:${verified?"var(--a3)":"var(--ink3)"};">${verified?"🔓":"🔒"}</span>`
+      : "";
     return `<div class="member-card" onclick="openMember(${i})">
       <div class="mc-avatar" style="background:${bg};border:2px solid ${clr};color:${clr}">${ini}</div>
       <div class="mc-nim">${m.nim||""}</div>
-      <div class="mc-name">${m.nama}</div>
+      <div class="mc-name">${m.nama} ${pinBadge}</div>
       <div class="mc-role" style="font-size:10px">${m.jobdesk||"— Pilih role"}</div>
       ${doneCount > 0 ? `<div style="margin-top:5px"><span class="chip chip-green" style="font-size:10px">✓ ${doneCount}/${totalW} Minggu</span></div>` : ""}
     </div>`;
@@ -405,6 +434,76 @@ function saveGame() {
 // ── MEMBER SCREEN ─────────────────────────────────────────────
 function openMember(idx) {
   ST.activeMember = idx;
+  const m = ST.members[idx];
+  // Kalau member punya PIN dan belum terverifikasi sesi ini → tampil PIN screen
+  if (m.hasPin && !ST.verifiedMembers[idx]) {
+    showPinScreen(idx);
+    return;
+  }
+  renderMemberScreen(idx);
+}
+
+function showPinScreen(idx) {
+  const m   = ST.members[idx];
+  const clr = AVATAR_COLORS[idx%5];
+  const bg  = AVATAR_BG[idx%5];
+  const ini = m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+  const av  = document.getElementById("pinAvatar");
+  av.textContent = ini;
+  av.style.cssText = `background:${bg};border:2.5px solid ${clr};color:${clr};width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin:0 auto 10px`;
+  document.getElementById("pinName").textContent = m.nama;
+  document.getElementById("pinRole").textContent = m.jobdesk || "Belum pilih role";
+  document.getElementById("pinInput").value = "";
+  document.getElementById("pinErr").textContent = "";
+  show("s-pin");
+  setTimeout(() => document.getElementById("pinInput").focus(), 200);
+}
+
+function doVerifyPin() {
+  const pin   = document.getElementById("pinInput").value.trim();
+  const errEl = document.getElementById("pinErr");
+  const btn   = document.getElementById("btnVerifyPin");
+  const idx   = ST.activeMember;
+  const m     = ST.members[idx];
+  if (!pin) { errEl.textContent = "Masukkan PIN dulu."; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spin"></span>Memverifikasi...';
+  errEl.textContent = "";
+
+  gasGet({
+    action: "verifyPin",
+    kelompok: ST.kode,
+    guild:    ST.party.guild,
+    nim:      m.nim || "",
+    nama:     m.nama,
+    pin:      pin,
+    userAgent: navigator.userAgent.substring(0,120)
+  }).then(res => {
+    btn.disabled = false;
+    btn.innerHTML = "🔓 Verifikasi";
+    const result = res && res.result;
+    if (result === "ok" || result === "no_pin_set") {
+      // PIN benar atau belum diset → izinkan masuk
+      ST.verifiedMembers[idx] = true;
+      renderMemberScreen(idx);
+    } else if (result === "wrong_pin") {
+      errEl.textContent = "❌ PIN salah. Coba lagi atau hubungi dosen.";
+      document.getElementById("pinInput").value = "";
+      document.getElementById("pinInput").focus();
+    } else if (result === "member_not_found") {
+      errEl.textContent = "Data tidak ditemukan. Hubungi dosen.";
+    } else {
+      errEl.textContent = "Gagal verifikasi. Cek koneksi internet.";
+    }
+  }).catch(() => {
+    btn.disabled = false;
+    btn.innerHTML = "🔓 Verifikasi";
+    errEl.textContent = "Gagal konek ke server.";
+  });
+}
+
+function renderMemberScreen(idx) {
   const m   = ST.members[idx];
   const clr = AVATAR_COLORS[idx%5]; const bg = AVATAR_BG[idx%5];
   const ini = m.nama.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
