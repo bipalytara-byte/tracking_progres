@@ -407,18 +407,18 @@ function loadAndRenderAnggota() {
   gasGet({action:"getMembers", kelompok}).then(res => {
     if (res && res.result && res.result.length) DST.allMembers[kelompok] = res.result;
     else if (!DST.allMembers[kelompok] || !DST.allMembers[kelompok].length) {
-      DST.allMembers[kelompok] = [{nim:"",nama:"",kelas:"TI A",jobdesk:""}];
+      DST.allMembers[kelompok] = [{nim:"",nama:"",kelas:"TI A",jobdesk:"",pin:""}];
     }
     renderAnggotaForm();
   }).catch(() => {
-    if (!DST.allMembers[kelompok]) DST.allMembers[kelompok] = [{nim:"",nama:"",kelas:"TI A",jobdesk:""}];
+    if (!DST.allMembers[kelompok]) DST.allMembers[kelompok] = [{nim:"",nama:"",kelas:"TI A",jobdesk:"",pin:""}];
     renderAnggotaForm();
   });
 }
 
 function renderAnggotaForm() {
   const kelompok = document.getElementById("kelompokSel").value;
-  const members  = DST.allMembers[kelompok] || [{nim:"",nama:"",kelas:"TI A",jobdesk:""}];
+  const members  = DST.allMembers[kelompok] || [{nim:"",nama:"",kelas:"TI A",jobdesk:"",pin:""}];
   const p        = PARTIES.find(x => x.key === kelompok);
 
   document.getElementById("anggotaFormArea").innerHTML = `<div class="box">
@@ -426,17 +426,18 @@ function renderAnggotaForm() {
       <div style="color:${p.color};font-size:12px;font-weight:bold">${p.key} — ${p.label}</div>
       <span style="font-size:11px;color:var(--ink3)">${members.filter(m=>m.nama).length} anggota terisi</span>
     </div>
-    <div style="display:grid;grid-template-columns:24px 1fr 1.4fr 70px 1.2fr 32px;gap:7px;margin-bottom:6px">
+    <div style="display:grid;grid-template-columns:24px 1fr 1.4fr 70px 1.2fr 100px 32px;gap:7px;margin-bottom:6px">
       <div></div>
       <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">NIM</div>
       <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">Nama Lengkap</div>
       <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">Kelas</div>
       <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">Jobdesk</div>
+      <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px">🔒 PIN</div>
       <div></div>
     </div>
     <div id="memberRows">
     ${members.map((m,i) => `
-      <div class="anggota-row">
+      <div style="display:grid;grid-template-columns:24px 1fr 1.4fr 70px 1.2fr 100px 32px;gap:7px;align-items:center;margin-bottom:7px">
         <div style="color:${p.color};font-size:11px;font-weight:bold;text-align:center">${i+1}</div>
         <input class="m-inp" placeholder="NIM" value="${m.nim||""}" oninput="DST.allMembers['${kelompok}'][${i}].nim=this.value">
         <input class="m-inp" placeholder="Nama lengkap" value="${m.nama||""}" oninput="DST.allMembers['${kelompok}'][${i}].nama=this.value">
@@ -445,17 +446,26 @@ function renderAnggotaForm() {
           <option value="TI B" ${m.kelas==="TI B"?"selected":""}>TI B</option>
         </select>
         <input class="m-inp" placeholder="Jobdesk (opsional)" value="${m.jobdesk||""}" oninput="DST.allMembers['${kelompok}'][${i}].jobdesk=this.value">
+        <input class="m-inp" type="password" placeholder="PIN" maxlength="12" value="${m.pin||""}"
+          title="PIN login pribadi mahasiswa ini"
+          oninput="DST.allMembers['${kelompok}'][${i}].pin=this.value"
+          style="font-family:monospace">
         <button class="btn-del" onclick="removeRow('${kelompok}',${i})">✕</button>
       </div>`).join("")}
     </div>
     <button onclick="addRow('${kelompok}')" style="background:transparent;color:var(--gold);border:1px dashed var(--border2);border-radius:6px;padding:7px 14px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif;width:100%;margin-top:4px">
       + Tambah Anggota
     </button>
+    <div style="margin-top:10px;background:var(--parch3);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--ink3)">
+      <b>ℹ️ Tentang PIN:</b> PIN adalah password pribadi setiap mahasiswa untuk mengakses laporan mereka.
+      Kosongkan jika tidak ingin menggunakan PIN (semua bisa akses tanpa verifikasi).
+      PIN yang sudah diset akan ditampilkan sebagai 🔒 di kartu anggota.
+    </div>
   </div>`;
 }
 
 function addRow(kelompok) {
-  DST.allMembers[kelompok].push({nim:"",nama:"",kelas:"TI A",jobdesk:""});
+  DST.allMembers[kelompok].push({nim:"",nama:"",kelas:"TI A",jobdesk:"",pin:""});
   renderAnggotaForm();
 }
 function removeRow(kelompok, idx) {
@@ -752,7 +762,12 @@ function renderLogAkses() {
               <td style="padding:7px 10px"><span style="color:${clr};font-weight:bold;font-size:11px">${l.kelompok||"—"}</span></td>
               <td style="padding:7px 10px;color:var(--ink3);font-size:11px">${l.guild||"—"}</td>
               <td style="padding:7px 10px;color:var(--ink3);font-size:11px" title="${l.user_agent||""}">${isMobile?"📱":"💻"} ${browser}</td>
-              <td style="padding:7px 10px"><span style="background:#e3f5ec;color:#277a50;border:1.5px solid var(--a3);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700">${l.status||"login"}</span></td>
+              <td style="padding:7px 10px">${(() => {
+                const st = l.status||"login";
+                if (st.startsWith("pin_gagal")) return \`<span style="background:#fde8e7;color:#b03228;border:1.5px solid var(--a1);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700">⚠️ \${st}</span>\`;
+                if (st === "pin_berhasil") return \`<span style="background:#e3f5ec;color:#277a50;border:1.5px solid var(--a3);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700">✅ PIN OK</span>\`;
+                return \`<span style="background:#e3f5ec;color:#277a50;border:1.5px solid var(--a3);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700">\${st}</span>\`;
+              })()}</td>
             </tr>`;
           }).join("")}
         </tbody>
