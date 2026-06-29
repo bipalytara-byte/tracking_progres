@@ -705,7 +705,12 @@ function selectWeek(week, idx, btn) {
 
   function renderWeekForm(status) {
     const deadlineInfo = status.deadline
-      ? `<div style="font-size:11px;color:var(--ink3);margin-top:4px">⏰ Deadline ${week}: <b>${status.deadline}</b></div>`
+      ? `<div style="font-size:11px;color:var(--ink3);margin-top:4px">⏰ Deadline asli ${week}: <b>${status.deadline}</b></div>`
+      : "";
+    const graceInfo = status.viaGrace
+      ? `<div style="font-size:12px;color:#8a6010;background:#fdf2d8;border:1.5px solid var(--gold);border-radius:8px;padding:8px 12px;margin:8px 0">
+          🎁 <b>Masa susulan aktif!</b> Deadline asli ${week} sudah lewat, tapi dosen membuka kesempatan mengisi/edit sampai <b>${status.graceSampai||"—"}</b>.
+        </div>`
       : "";
 
     if (log && !status.editable) {
@@ -732,12 +737,13 @@ function selectWeek(week, idx, btn) {
           ${deadlineInfo}
         </div>`;
     } else {
-      // Masih bisa diisi/edit (baik laporan baru maupun edit ulang sebelum deadline)
+      // Masih bisa diisi/edit (baik laporan baru maupun edit ulang sebelum deadline, atau via masa susulan)
       const isEdit  = !!log;
       const prePct  = isEdit ? (parseInt(String(log.progres||"0").replace("%",""))||0) : 0;
       const preDetail = isEdit ? (log.detail||"") : "";
       area.innerHTML = `<div class="rpg-h3" style="margin-bottom:6px">${isEdit ? "✏️ Edit Laporan " : "Isi Laporan "}${week}</div>
-        ${isEdit ? `<div style="font-size:11px;color:var(--a4);margin-bottom:10px">Kamu masih bisa mengubah laporan ini sampai deadline.</div>` : ""}
+        ${graceInfo}
+        ${(isEdit && !status.viaGrace) ? `<div style="font-size:11px;color:var(--a4);margin-bottom:10px">Kamu masih bisa mengubah laporan ini sampai deadline.</div>` : ""}
         ${deadlineInfo}
         <div class="form-field" style="margin-top:10px">
           <label class="form-lbl">Progres Penyelesaian (%)</label>

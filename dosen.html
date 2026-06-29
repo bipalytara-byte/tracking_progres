@@ -282,6 +282,13 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
           </div>
           <input class="m-inp" id="cfgDeadlineJam" type="time" value="23:59">
         </div>
+        <div class="cfg-row">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--ink2)">🎁 Masa Susulan (Grace Period)</div>
+            <div style="font-size:12px;color:var(--ink3)">Kalau diisi, minggu yang SUDAH lewat deadline tetap bisa diisi/diedit mahasiswa sampai waktu ini. Minggu yang masih aktif/belum lewat deadline TIDAK ikut diperpanjang. Kosongkan untuk menutup masa susulan.</div>
+          </div>
+          <input class="m-inp" id="cfgGracePeriod" type="datetime-local">
+        </div>
         <button class="btn btn-gold" style="margin-top:8px" id="btnSimpanDeadline" onclick="simpanDeadlineConfig()">💾 Simpan Pengaturan Deadline</button>
         <div class="ok" id="deadlineOk"></div>
         <div class="err" id="deadlineErr"></div>
@@ -390,6 +397,7 @@ function refreshAll() {
       if (document.getElementById("cfgTanggalMulai")) document.getElementById("cfgTanggalMulai").value = res.result.tanggal_mulai || "";
       if (document.getElementById("cfgDeadlineHari"))  document.getElementById("cfgDeadlineHari").value = res.result.deadline_hari || "Minggu";
       if (document.getElementById("cfgDeadlineJam"))   document.getElementById("cfgDeadlineJam").value  = res.result.deadline_jam  || "23:59";
+      if (document.getElementById("cfgGracePeriod"))   document.getElementById("cfgGracePeriod").value  = res.result.grace_period_sampai || "";
       updateRoleLockUI();
     }
     // Setelah config selesai, baru load data lain
@@ -874,6 +882,7 @@ function renderConfigTab() {
   document.getElementById("cfgTanggalMulai").value = DST.config.tanggal_mulai || "";
   document.getElementById("cfgDeadlineHari").value  = DST.config.deadline_hari || "Minggu";
   document.getElementById("cfgDeadlineJam").value   = DST.config.deadline_jam  || "23:59";
+  document.getElementById("cfgGracePeriod").value   = DST.config.grace_period_sampai || "";
 }
 
 function simpanConfig() {
@@ -913,25 +922,28 @@ function simpanDeadlineConfig() {
   const tanggalMulai = document.getElementById("cfgTanggalMulai").value;
   const deadlineHari = document.getElementById("cfgDeadlineHari").value;
   const deadlineJam  = document.getElementById("cfgDeadlineJam").value || "23:59";
+  const gracePeriod  = document.getElementById("cfgGracePeriod").value || "";
   const btn  = document.getElementById("btnSimpanDeadline");
   const okEl = document.getElementById("deadlineOk");
   const errEl = document.getElementById("deadlineErr");
 
   errEl.textContent = ""; btn.disabled = true; btn.innerHTML = '<span class="loading-spin"></span>Menyimpan...';
 
-  const cfg = { tanggal_mulai: tanggalMulai || "", deadline_hari: deadlineHari, deadline_jam: deadlineJam };
+  const cfg = { tanggal_mulai: tanggalMulai || "", deadline_hari: deadlineHari, deadline_jam: deadlineJam, grace_period_sampai: gracePeriod };
   gasGet({action:"saveConfig", config:cfg}).then(res => {
     btn.disabled = false; btn.innerHTML = "💾 Simpan Pengaturan Deadline";
     if (res && res.status === "success") {
       DST.config = {...DST.config, ...cfg};
       okEl.style.color = "var(--a3)";
-      okEl.textContent = tanggalMulai
+      let msg = tanggalMulai
         ? "✅ Deadline tersimpan! Mahasiswa wajib lapor/edit sebelum " + deadlineHari + " jam " + deadlineJam + " tiap minggu."
         : "✅ Tersimpan! Tanggal mulai kosong = tidak ada batas deadline (bebas kapan saja).";
+      if (gracePeriod) msg += " Masa susulan aktif sampai " + gracePeriod.replace("T"," ") + " untuk minggu yang sudah lewat deadline.";
+      okEl.textContent = msg;
     } else {
       errEl.textContent = "Gagal menyimpan. Coba lagi.";
     }
-    setTimeout(()=>okEl.textContent="", 5000);
+    setTimeout(()=>okEl.textContent="", 6000);
   }).catch(()=>{ btn.disabled=false; btn.innerHTML="💾 Simpan Pengaturan Deadline"; errEl.textContent="Gagal konek server."; });
 }
 
