@@ -186,6 +186,7 @@ textarea.rpg-input{resize:vertical;margin-bottom:0}
         </div>
       </div>
     </div>
+    <div id="roleChangeArea" style="margin-bottom:1rem"></div>
     <div class="rpg-h3" style="margin-bottom:8px">Pilih Minggu</div>
     <div class="week-tabs" id="weekTabs"></div>
     <div id="weekArea"></div>
@@ -227,7 +228,7 @@ let ST = {
   verifiedMembers:{},
   jumlahMinggu:8, config:{},
   tanggalMulai:"", deadlineHari:"Minggu", deadlineJam:"23:59",
-  roleLockEnabled:true, roleOptions:[], weekStatusCache:{},
+  roleLockEnabled:true, roleChangeEnabled:false, roleOptions:[], weekStatusCache:{},
   roleRequests:[] // pengajuan second role milik kelompok ini (untuk cek status pending)
 };
 
@@ -273,6 +274,7 @@ window.addEventListener("DOMContentLoaded", function(){
     if (res && res.result && res.result.roles && res.result.roles.length) {
       ST.roleOptions = res.result.roles;
       ST.roleLockEnabled = !!res.result.roleLockEnabled;
+      ST.roleChangeEnabled = !!res.result.roleChangeEnabled;
     } else {
       ST.roleOptions = ROLE_OPTIONS;
     }
@@ -532,13 +534,20 @@ function renderMemberScreen(idx) {
   document.getElementById("mName").textContent  = m.nama;
   document.getElementById("mNIM").textContent   = m.nim||"—";
   document.getElementById("mKelas").textContent = m.kelas||"";
+  const roleChangeArea = document.getElementById("roleChangeArea");
+
   if (!m.jobdesk) {
     document.getElementById("mRole").textContent = "Role belum dipilih";
-    renderRolePicker(idx);
+    roleChangeArea.innerHTML = "";
+    renderRolePicker(idx, false);
   } else {
     const roleKedua = (m.roleKedua && m.roleKedua.length) ? " + " + m.roleKedua.join(", ") : "";
     document.getElementById("mRole").textContent = m.jobdesk + roleKedua;
     renderWeekTabs(idx);
+    // Tombol ubah role hanya tampil kalau dosen sudah membuka kesempatan ganti role
+    roleChangeArea.innerHTML = ST.roleChangeEnabled
+      ? `<button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:12px" onclick="renderRolePicker(${idx}, true)">🔄 Ubah Role</button>`
+      : `<div style="font-size:11px;color:var(--ink3)">🔒 Perubahan role sedang ditutup dosen.</div>`;
   }
   show("s-member");
 }
@@ -558,19 +567,21 @@ function getRoleOptionsList() {
   return (ST.roleOptions && ST.roleOptions.length) ? ST.roleOptions : ROLE_OPTIONS;
 }
 
-function renderRolePicker(idx) {
+function renderRolePicker(idx, isChange) {
   const opts  = getRoleOptionsList();
   const taken = getTakenRoles(idx);
+  const m     = ST.members[idx];
   document.getElementById("weekArea").innerHTML = `<div class="box">
-    <div class="rpg-h3" style="margin-bottom:6px">Pilih role kamu dalam tim</div>
+    <div class="rpg-h3" style="margin-bottom:6px">${isChange ? "Ubah role kamu dalam tim" : "Pilih role kamu dalam tim"}</div>
     <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">
       ${ST.roleLockEnabled ? "🔒 Role utama harus unik — tiap role hanya boleh dipakai 1 orang per kelompok." : "🔓 Role bebas dipilih siapa saja (mode bebas aktif)."}
     </div>
     <div class="role-grid">${opts.map(r => {
-      const isTaken = ST.roleLockEnabled && taken[r.label];
-      return `<div class="role-chip ${isTaken?'taken':''}" data-role="${r.label}" data-desc="${(r.desc||'').replace(/"/g,'&quot;')}" onclick="selectRole(this)"
+      const isTaken = ST.roleLockEnabled && taken[r.label] && r.label !== m.jobdesk;
+      const isCurrent = r.label === m.jobdesk;
+      return `<div class="role-chip ${isTaken?'taken':''} ${isCurrent?'selected':''}" data-role="${r.label}" data-desc="${(r.desc||'').replace(/"/g,'&quot;')}" onclick="selectRole(this)"
         title="${(r.desc||'').replace(/"/g,'&quot;')}" style="${isTaken?'opacity:.55':''}">
-        ${r.icon} ${r.label}${isTaken?` <span style="font-size:10px;color:var(--a1)">(dipakai ${taken[r.label]})</span>`:""}
+        ${r.icon} ${r.label}${isTaken?` <span style="font-size:10px;color:var(--a1)">(dipakai ${taken[r.label]})</span>`:""}${isCurrent?` <span style="font-size:10px;color:var(--a3)">(saat ini)</span>`:""}
       </div>`;
     }).join("")}
     <div class="role-chip" style="border-style:dashed;color:var(--ink3)" data-role="__other__" data-desc="" onclick="selectRole(this)">✏️ Lainnya...</div>
@@ -584,6 +595,7 @@ function renderRolePicker(idx) {
       ⚠️ Role ini sudah jadi role utama anggota lain. Kamu tetap bisa <b>mengajukan</b> role ini sebagai <b>second role</b> — perlu di-ACC dosen dulu sebelum aktif.
     </div>
     <button class="btn btn-gold" id="btnConfirmRole" onclick="confirmRole(${idx})">✅ Konfirmasi Role</button>
+    ${isChange ? `<button class="btn btn-ghost" onclick="renderWeekTabs(${idx})">Batal</button>` : ""}
     <div class="err" id="roleErr"></div>
     <div class="ok" id="roleOk"></div>
   </div>`;
@@ -624,7 +636,10 @@ function confirmRole(idx) {
   if (role === "__other__") { role = (document.getElementById("customRoleInput").value||"").trim(); if (!role) { errEl.textContent = "Isi role kamu!"; return; } }
 
   const m       = ST.members[idx];
-  const isTaken = ST.roleLockEnabled && sel.classList.contains("taken");
+  const isSame  = role === m.jobdesk;
+  const isTaken = ST.roleLockEnabled && sel.classList.contains("taken") && !isSame;
+
+  if (isSame) { errEl.textContent = "Itu role kamu saat ini. Pilih role lain untuk berganti."; return; }
 
   if (isTaken) {
     // Role utama sudah dipakai orang lain → ajukan sebagai SECOND ROLE (perlu ACC dosen), bukan langsung set jobdesk
@@ -639,15 +654,20 @@ function confirmRole(idx) {
     return;
   }
 
-  // Role belum dipakai (atau role-lock dimatikan) → langsung set sebagai role utama
+  // Role belum dipakai (atau role-lock dimatikan) → langsung set/ganti sebagai role utama.
+  // actor:"mahasiswa" supaya backend tahu ini dari portal mahasiswa, bukan panel dosen —
+  // kalau dosen menutup fitur ubah role, backend akan menolak perubahan ini (kecuali role masih kosong).
+  const prevJobdesk = m.jobdesk;
   ST.members[idx].jobdesk = role;
-  gasPost({action:"saveMembers", kelompok:ST.party.guild, members:ST.members}).then(res => {
+  gasPost({action:"saveMembers", kelompok:ST.party.guild, members:ST.members, actor:"mahasiswa"}).then(res => {
     if (res && res.status === "error") {
       errEl.textContent = res.message || "Gagal menyimpan role.";
-      ST.members[idx].jobdesk = ""; // rollback state lokal kalau backend tolak (misal race condition unik)
+      ST.members[idx].jobdesk = prevJobdesk; // rollback state lokal kalau backend tolak
     } else {
-      document.getElementById("mRole").textContent = role;
-      renderMemberGrid(); renderWeekTabs(idx);
+      okEl.style.color = "var(--a3)";
+      okEl.textContent = "✅ Role berhasil diperbarui!";
+      renderMemberGrid();
+      setTimeout(() => renderMemberScreen(idx), 600);
     }
   });
 }

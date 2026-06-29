@@ -307,6 +307,17 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
           </div>
           <button class="btn btn-fire btn-sm" id="btnToggleRoleLock" style="width:auto" onclick="toggleRoleLock()">⏳</button>
         </div>
+
+        <div style="font-size:12px;color:var(--ink3);margin:14px 0 10px">
+          Terpisah dari pengaturan di atas: ini mengatur apakah mahasiswa boleh <b>mengganti sendiri</b> role utama yang sudah dipilih sebelumnya (lewat tombol "Ubah Role" di portal mereka). Defaultnya TERTUTUP — role yang sudah dipilih terkunci sampai kamu membuka kesempatan ini.
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--parch);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--ink2)" id="roleChangeStatusLbl">Memuat status...</div>
+            <div style="font-size:11px;color:var(--ink3)">Klik tombol untuk buka/tutup masa perubahan role mandiri</div>
+          </div>
+          <button class="btn btn-fire btn-sm" id="btnToggleRoleChange" style="width:auto" onclick="toggleRoleChange()">⏳</button>
+        </div>
       </div>
 
     </div>
@@ -334,6 +345,7 @@ let DST = {
   filterKelompok: "semua",
   jumlahMinggu: 8,
   roleLockEnabled: true,
+  roleChangeEnabled: false,
   roleRequests: []
 };
 
@@ -391,6 +403,7 @@ function refreshAll() {
       DST.config = res.result;
       DST.jumlahMinggu = parseInt(res.result.jumlah_minggu) || 8;
       DST.roleLockEnabled = String(res.result.role_lock_enabled || "true") === "true";
+      DST.roleChangeEnabled = String(res.result.role_change_enabled || "false") === "true";
       if (document.getElementById("cfgMatkul"))   document.getElementById("cfgMatkul").value   = res.result.nama_matkul || "";
       if (document.getElementById("cfgSemester")) document.getElementById("cfgSemester").value = res.result.semester    || "";
       if (document.getElementById("cfgMinggu"))   document.getElementById("cfgMinggu").value   = res.result.jumlah_minggu || 8;
@@ -399,6 +412,7 @@ function refreshAll() {
       if (document.getElementById("cfgDeadlineJam"))   document.getElementById("cfgDeadlineJam").value  = res.result.deadline_jam  || "23:59";
       if (document.getElementById("cfgGracePeriod"))   document.getElementById("cfgGracePeriod").value  = res.result.grace_period_sampai || "";
       updateRoleLockUI();
+      updateRoleChangeUI();
     }
     // Setelah config selesai, baru load data lain
     _loadDataAfterConfig();
@@ -446,6 +460,37 @@ function toggleRoleLock() {
   }).catch(() => { btn.disabled = false; updateRoleLockUI(); alert("Gagal konek ke server."); });
 }
 
+function updateRoleChangeUI() {
+  const lbl = document.getElementById("roleChangeStatusLbl");
+  const btn = document.getElementById("btnToggleRoleChange");
+  if (!lbl || !btn) return;
+  if (DST.roleChangeEnabled) {
+    lbl.innerHTML = '🔓 Ubah Role Mandiri: <span style="color:var(--a3)">DIBUKA</span> — mahasiswa boleh ganti role sendiri';
+    btn.textContent = "🔒 Tutup Perubahan Role";
+    btn.className = "btn btn-sec btn-sm";
+  } else {
+    lbl.innerHTML = '🔒 Ubah Role Mandiri: <span style="color:var(--a1)">DITUTUP</span> — role terkunci, hanya dosen yang bisa ubah';
+    btn.textContent = "🔓 Buka Perubahan Role";
+    btn.className = "btn btn-fire btn-sm";
+  }
+}
+
+function toggleRoleChange() {
+  const newVal = !DST.roleChangeEnabled;
+  const btn = document.getElementById("btnToggleRoleChange");
+  btn.disabled = true; btn.textContent = "⏳ Menyimpan...";
+  gasGet({action:"saveConfig", config:{role_change_enabled: newVal ? "true" : "false"}}).then(res => {
+    btn.disabled = false;
+    if (res && res.status === "success") {
+      DST.roleChangeEnabled = newVal;
+      updateRoleChangeUI();
+    } else {
+      updateRoleChangeUI();
+      alert("Gagal mengubah pengaturan. Coba lagi.");
+    }
+  }).catch(() => { btn.disabled = false; updateRoleChangeUI(); alert("Gagal konek ke server."); });
+}
+
 function _loadDataAfterConfig() {
   function reRenderAll() {
     renderOverview();
@@ -488,7 +533,7 @@ function setTab(tab, btn) {
   if (tab === "rolereq")  loadRoleRequests();
   if (tab === "feedback") { buildFbMingguSel(); renderFeedbackTab(); }
   if (tab === "logakses") loadLogAkses();
-  if (tab === "config")   { renderConfigTab(); updateRoleLockUI(); }
+  if (tab === "config")   { renderConfigTab(); updateRoleLockUI(); updateRoleChangeUI(); }
 }
 
 // ── OVERVIEW ─────────────────────────────────────────────────
