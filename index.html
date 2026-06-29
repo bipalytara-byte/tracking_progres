@@ -784,7 +784,7 @@ function selectWeek(week, idx, btn) {
     if (log) {
       gasGet({action:"getFeedback", kelompok:ST.party.guild, minggu:week}).then(res => {
         if (res && res.result) {
-          const fb = res.result.find(f => f.nim===m.nim || f.nama===m.nama);
+          const fb = res.result.find(f => String(f.nim||"")===String(m.nim||"") || (f.nama && m.nama && String(f.nama)===String(m.nama)));
           if (fb) {
             ST.feedbacks[fbKey] = fb;
             const el = document.getElementById("feedbackArea");

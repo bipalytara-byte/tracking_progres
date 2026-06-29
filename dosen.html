@@ -855,7 +855,7 @@ function renderFeedbackTab() {
       <span style="font-size:11px;color:var(--ink3);margin-left:8px">${logsThisWeek.length} laporan masuk dari ${members.length} anggota</span>
     </div>
     ${members.map((m,i) => {
-      const log = logsThisWeek.find(l => l.nim===m.nim || l.nama===m.nama);
+      const log = logsThisWeek.find(l => String(l.nim||"")===String(m.nim||"") || (l.nama && m.nama && String(l.nama)===String(m.nama)));
       const fbKey = (m.nim||m.nama) + "_" + kelompok + "_" + minggu;
       const cachedFb = DST.feedbacks[fbKey] || null;
       return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--parch)">
