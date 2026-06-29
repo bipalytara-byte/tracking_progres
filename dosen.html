@@ -95,6 +95,7 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
         <button class="nav-tab active" onclick="setTab('overview',this)">📊 Overview</button>
         <button class="nav-tab" onclick="setTab('anggota',this)">👥 Data Anggota</button>
         <button class="nav-tab" onclick="setTab('progres',this)">📋 Tracking</button>
+        <button class="nav-tab" onclick="setTab('rolereq',this)">🎭 Pengajuan Role <span id="roleReqBadge" style="display:none;background:var(--a1);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:3px">0</span></button>
         <button class="nav-tab" onclick="setTab('feedback',this)">💬 Feedback</button>
         <button class="nav-tab" onclick="setTab('logakses',this)">🔍 Log Akses</button>
         <button class="nav-tab" onclick="setTab('config',this)">⚙️ Konfigurasi</button>
@@ -130,6 +131,25 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
       <button class="btn btn-gold" id="btnSimpanAnggota" onclick="simpanAnggota()">💾 Simpan ke Google Sheets</button>
       <div class="ok" id="anggotaOk"></div>
       <div class="err" id="anggotaErr"></div>
+    </div>
+
+    <!-- PENGAJUAN ROLE (second role) -->
+    <div id="tab-rolereq" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <div class="rpg-h3" style="margin-bottom:0">ACC / Tolak pengajuan second role mahasiswa</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select class="m-sel" style="width:auto;min-width:160px" id="roleReqStatusSel" onchange="renderRoleRequests()">
+            <option value="pending">Menunggu ACC</option>
+            <option value="accepted">Sudah Diterima</option>
+            <option value="rejected">Sudah Ditolak</option>
+            <option value="">Semua Status</option>
+          </select>
+          <button class="btn btn-sec btn-sm" onclick="loadRoleRequests()">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="roleReqArea">
+        <div style="text-align:center;padding:1.5rem;color:var(--ink3)">Klik Refresh untuk memuat pengajuan.</div>
+      </div>
     </div>
 
     <!-- TRACKING PROGRES -->
@@ -227,6 +247,61 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
         <div class="ok" id="configOk"></div>
         <div class="err" id="configErr"></div>
       </div>
+
+      <div class="box">
+        <div class="rpg-h3" style="margin-bottom:4px">⏰ Deadline Laporan Mingguan</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px">
+          Aturan ini otomatis berulang setiap minggu. Mahasiswa bisa isi/edit laporan sampai deadline tiba, lalu otomatis terkunci.
+        </div>
+        <div class="cfg-row">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--ink2)">Tanggal Mulai Minggu 1</div>
+            <div style="font-size:12px;color:var(--ink3)">Tanggal awal periode laporan. Kosongkan = tidak ada batas deadline (bebas kapan saja).</div>
+          </div>
+          <input class="m-inp" id="cfgTanggalMulai" type="date">
+        </div>
+        <div class="cfg-row">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--ink2)">Hari Deadline (tiap minggu)</div>
+            <div style="font-size:12px;color:var(--ink3)">Hari laporan ditutup, berulang setiap minggu</div>
+          </div>
+          <select class="m-sel" id="cfgDeadlineHari">
+            <option value="Senin">Senin</option>
+            <option value="Selasa">Selasa</option>
+            <option value="Rabu">Rabu</option>
+            <option value="Kamis">Kamis</option>
+            <option value="Jumat">Jumat</option>
+            <option value="Sabtu">Sabtu</option>
+            <option value="Minggu" selected>Minggu</option>
+          </select>
+        </div>
+        <div class="cfg-row">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--ink2)">Jam Deadline</div>
+            <div style="font-size:12px;color:var(--ink3)">Jam laporan ditutup pada hari deadline</div>
+          </div>
+          <input class="m-inp" id="cfgDeadlineJam" type="time" value="23:59">
+        </div>
+        <button class="btn btn-gold" style="margin-top:8px" id="btnSimpanDeadline" onclick="simpanDeadlineConfig()">💾 Simpan Pengaturan Deadline</button>
+        <div class="ok" id="deadlineOk"></div>
+        <div class="err" id="deadlineErr"></div>
+      </div>
+
+      <div class="box">
+        <div class="rpg-h3" style="margin-bottom:4px">🎭 Pengaturan Sistem Role</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px">
+          Saat AKTIF: role utama wajib unik per kelompok, dan mahasiswa yang ingin mengambil role yang sudah dipakai harus mengajukan sebagai second role lalu menunggu ACC dosen di tab "Pengajuan Role".<br>
+          Saat NONAKTIF (mode bebas): mahasiswa bisa pilih role apa saja tanpa validasi keunikan, seperti sistem lama.
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--parch);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--ink2)" id="roleLockStatusLbl">Memuat status...</div>
+            <div style="font-size:11px;color:var(--ink3)">Klik tombol untuk buka/tutup validasi role unik</div>
+          </div>
+          <button class="btn btn-fire btn-sm" id="btnToggleRoleLock" style="width:auto" onclick="toggleRoleLock()">⏳</button>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -250,7 +325,9 @@ let DST = {
   logAkses:    [],
   config:      {},
   filterKelompok: "semua",
-  jumlahMinggu: 8
+  jumlahMinggu: 8,
+  roleLockEnabled: true,
+  roleRequests: []
 };
 
 // ── GAS ───────────────────────────────────────────────────────
@@ -306,13 +383,59 @@ function refreshAll() {
     if (res && res.result) {
       DST.config = res.result;
       DST.jumlahMinggu = parseInt(res.result.jumlah_minggu) || 8;
+      DST.roleLockEnabled = String(res.result.role_lock_enabled || "true") === "true";
       if (document.getElementById("cfgMatkul"))   document.getElementById("cfgMatkul").value   = res.result.nama_matkul || "";
       if (document.getElementById("cfgSemester")) document.getElementById("cfgSemester").value = res.result.semester    || "";
       if (document.getElementById("cfgMinggu"))   document.getElementById("cfgMinggu").value   = res.result.jumlah_minggu || 8;
+      if (document.getElementById("cfgTanggalMulai")) document.getElementById("cfgTanggalMulai").value = res.result.tanggal_mulai || "";
+      if (document.getElementById("cfgDeadlineHari"))  document.getElementById("cfgDeadlineHari").value = res.result.deadline_hari || "Minggu";
+      if (document.getElementById("cfgDeadlineJam"))   document.getElementById("cfgDeadlineJam").value  = res.result.deadline_jam  || "23:59";
+      updateRoleLockUI();
     }
     // Setelah config selesai, baru load data lain
     _loadDataAfterConfig();
   }).catch(() => _loadDataAfterConfig());
+
+  // Update badge jumlah pengajuan role pending (independen dari config)
+  gasGet({action:"getRoleRequests", status:"pending"}).then(res => {
+    const badge = document.getElementById("roleReqBadge");
+    const count = (res && res.result) ? res.result.length : 0;
+    if (badge) {
+      if (count > 0) { badge.style.display = "inline"; badge.textContent = count; }
+      else badge.style.display = "none";
+    }
+  }).catch(()=>{});
+}
+
+function updateRoleLockUI() {
+  const lbl = document.getElementById("roleLockStatusLbl");
+  const btn = document.getElementById("btnToggleRoleLock");
+  if (!lbl || !btn) return;
+  if (DST.roleLockEnabled) {
+    lbl.innerHTML = '🔒 Role Unik: <span style="color:var(--a3)">AKTIF</span>';
+    btn.textContent = "🔓 Matikan (Mode Bebas)";
+    btn.className = "btn btn-sec btn-sm";
+  } else {
+    lbl.innerHTML = '🔓 Role Unik: <span style="color:var(--a1)">NONAKTIF (mode bebas)</span>';
+    btn.textContent = "🔒 Aktifkan Validasi Unik";
+    btn.className = "btn btn-fire btn-sm";
+  }
+}
+
+function toggleRoleLock() {
+  const newVal = !DST.roleLockEnabled;
+  const btn = document.getElementById("btnToggleRoleLock");
+  btn.disabled = true; btn.textContent = "⏳ Menyimpan...";
+  gasGet({action:"saveConfig", config:{role_lock_enabled: newVal ? "true" : "false"}}).then(res => {
+    btn.disabled = false;
+    if (res && res.status === "success") {
+      DST.roleLockEnabled = newVal;
+      updateRoleLockUI();
+    } else {
+      updateRoleLockUI();
+      alert("Gagal mengubah pengaturan. Coba lagi.");
+    }
+  }).catch(() => { btn.disabled = false; updateRoleLockUI(); alert("Gagal konek ke server."); });
 }
 
 function _loadDataAfterConfig() {
@@ -349,14 +472,15 @@ function _loadDataAfterConfig() {
 function setTab(tab, btn) {
   document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  ["overview","anggota","progres","feedback","logakses","config"].forEach(t => {
+  ["overview","anggota","progres","rolereq","feedback","logakses","config"].forEach(t => {
     document.getElementById("tab-"+t).style.display = t === tab ? "block" : "none";
   });
   if (tab === "anggota")  loadAndRenderAnggota();
   if (tab === "progres")  { buildProgPartyFilter(); renderProgTable(); }
+  if (tab === "rolereq")  loadRoleRequests();
   if (tab === "feedback") { buildFbMingguSel(); renderFeedbackTab(); }
   if (tab === "logakses") loadLogAkses();
-  if (tab === "config")   renderConfigTab();
+  if (tab === "config")   { renderConfigTab(); updateRoleLockUI(); }
 }
 
 // ── OVERVIEW ─────────────────────────────────────────────────
@@ -437,7 +561,8 @@ function renderAnggotaForm() {
     </div>
     <div id="memberRows">
     ${members.map((m,i) => `
-      <div style="display:grid;grid-template-columns:24px 1fr 1.4fr 70px 1.2fr 100px 32px;gap:7px;align-items:center;margin-bottom:7px">
+      <div style="margin-bottom:7px">
+      <div style="display:grid;grid-template-columns:24px 1fr 1.4fr 70px 1.2fr 100px 32px;gap:7px;align-items:center">
         <div style="color:${p.color};font-size:11px;font-weight:bold;text-align:center">${i+1}</div>
         <input class="m-inp" placeholder="NIM" value="${m.nim||""}" oninput="DST.allMembers['${kelompok}'][${i}].nim=this.value">
         <input class="m-inp" placeholder="Nama lengkap" value="${m.nama||""}" oninput="DST.allMembers['${kelompok}'][${i}].nama=this.value">
@@ -451,6 +576,8 @@ function renderAnggotaForm() {
           oninput="DST.allMembers['${kelompok}'][${i}].pin=this.value"
           style="font-family:monospace">
         <button class="btn-del" onclick="removeRow('${kelompok}',${i})">✕</button>
+      </div>
+      ${m.roleKedua && m.roleKedua.length ? `<div style="margin-left:31px;margin-top:3px;font-size:11px;color:var(--a2)">🎭 Second role (sudah di-ACC): <b>${m.roleKedua.join(", ")}</b></div>` : ""}
       </div>`).join("")}
     </div>
     <button onclick="addRow('${kelompok}')" style="background:transparent;color:var(--gold);border:1px dashed var(--border2);border-radius:6px;padding:7px 14px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif;width:100%;margin-top:4px">
@@ -489,16 +616,94 @@ function simpanAnggota() {
     if (res && res.status === "success") {
       okEl.style.color = "var(--a3)";
       okEl.textContent = "✅ Data anggota " + kelompok + " berhasil disimpan! Mahasiswa sudah bisa login.";
+      renderOverview();
     } else {
-      okEl.style.color = "var(--a4)";
-      okEl.textContent = "⚠️ Ada masalah saat menyimpan. Coba lagi.";
+      // Tampilkan pesan error spesifik dari backend (misal: role bentrok / duplikat)
+      errEl.textContent = (res && res.message) ? "⚠️ " + res.message : "⚠️ Ada masalah saat menyimpan. Coba lagi.";
     }
     setTimeout(() => okEl.textContent = "", 5000);
-    renderOverview();
   }).catch(() => {
     btn.disabled = false; btn.innerHTML = "💾 Simpan ke Google Sheets";
     errEl.textContent = "Gagal konek ke server.";
   });
+}
+
+// ── PENGAJUAN ROLE (second role) ───────────────────────────────
+function loadRoleRequests() {
+  const area = document.getElementById("roleReqArea");
+  area.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--ink3)"><span class="loading-spin"></span> Memuat pengajuan...</div>`;
+  const statusFilter = document.getElementById("roleReqStatusSel").value;
+  const payload = {action:"getRoleRequests"};
+  if (statusFilter) payload.status = statusFilter;
+  gasGet(payload).then(res => {
+    DST.roleRequests = (res && res.result) ? res.result : [];
+    renderRoleRequests();
+  }).catch(() => {
+    area.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--a1)">Gagal memuat. Cek koneksi.</div>`;
+  });
+}
+
+function renderRoleRequests() {
+  const area = document.getElementById("roleReqArea");
+  const statusFilter = document.getElementById("roleReqStatusSel").value;
+  const list = statusFilter ? DST.roleRequests.filter(r => r.status === statusFilter) : DST.roleRequests;
+  const pcolor = Object.fromEntries(PARTIES.map(p=>[p.key,p.color]));
+
+  if (!list.length) {
+    area.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--ink3)">Tidak ada pengajuan${statusFilter?" dengan status ini":""}.</div>`;
+    return;
+  }
+
+  area.innerHTML = list.map(r => {
+    const clr = pcolor[r.kelompok] || "#888";
+    const statusBadge = r.status === "pending"
+      ? '<span style="background:#fdf2d8;color:#8a6010;border:1.5px solid var(--gold);border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700">⏳ Menunggu</span>'
+      : r.status === "accepted"
+      ? '<span style="background:#e3f5ec;color:#277a50;border:1.5px solid var(--a3);border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700">✅ Diterima</span>'
+      : '<span style="background:#fde8e7;color:#b03228;border:1.5px solid var(--a1);border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700">❌ Ditolak</span>';
+
+    return `<div class="party-card" style="border-left:3px solid ${clr}">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:13px">${r.nama} <span style="color:var(--ink3);font-size:11px;font-weight:400">(${r.nim||"—"})</span></div>
+          <div style="font-size:12px;color:${clr};font-weight:700;margin-top:2px">${r.kelompok}</div>
+          <div style="font-size:13px;color:var(--ink2);margin-top:5px">Mengajukan second role: <b>${r.role_diajukan}</b></div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:3px">Diajukan: ${r.waktu||"—"}${r.waktu_acc?` &bull; Diproses: ${r.waktu_acc}`:""}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${statusBadge}
+          ${r.status === "pending" ? `
+            <button class="btn btn-green btn-sm" style="width:auto" onclick="accRoleRequest(${r._row})">✅ ACC</button>
+            <button class="btn btn-fire btn-sm" style="width:auto" onclick="rejRoleRequest(${r._row})">❌ Tolak</button>
+          ` : ""}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function accRoleRequest(rowNum) {
+  if (!confirm("Terima pengajuan second role ini? Role akan langsung aktif untuk mahasiswa tersebut.")) return;
+  gasGet({action:"acceptRoleRequest", rowNum, dosen:"Dosen"}).then(res => {
+    if (res && res.status === "success") {
+      loadRoleRequests();
+      refreshAll(); // update badge & data anggota
+    } else {
+      alert("Gagal memproses. Coba lagi.");
+    }
+  }).catch(() => alert("Gagal konek ke server."));
+}
+
+function rejRoleRequest(rowNum) {
+  if (!confirm("Tolak pengajuan second role ini?")) return;
+  gasGet({action:"rejectRoleRequest", rowNum, dosen:"Dosen"}).then(res => {
+    if (res && res.status === "success") {
+      loadRoleRequests();
+      refreshAll();
+    } else {
+      alert("Gagal memproses. Coba lagi.");
+    }
+  }).catch(() => alert("Gagal konek ke server."));
 }
 
 // ── TRACKING PROGRES ──────────────────────────────────────────
@@ -666,6 +871,9 @@ function renderConfigTab() {
   if (DST.config.nama_matkul) document.getElementById("cfgMatkul").value   = DST.config.nama_matkul||"";
   if (DST.config.semester)    document.getElementById("cfgSemester").value = DST.config.semester||"";
   if (DST.config.jumlah_minggu) document.getElementById("cfgMinggu").value = DST.config.jumlah_minggu||8;
+  document.getElementById("cfgTanggalMulai").value = DST.config.tanggal_mulai || "";
+  document.getElementById("cfgDeadlineHari").value  = DST.config.deadline_hari || "Minggu";
+  document.getElementById("cfgDeadlineJam").value   = DST.config.deadline_jam  || "23:59";
 }
 
 function simpanConfig() {
@@ -699,6 +907,32 @@ function simpanConfig() {
     }
     setTimeout(()=>okEl.textContent="",4000);
   }).catch(()=>{ btn.disabled=false; btn.innerHTML="💾 Simpan Konfigurasi"; errEl.textContent="Gagal konek server."; });
+}
+
+function simpanDeadlineConfig() {
+  const tanggalMulai = document.getElementById("cfgTanggalMulai").value;
+  const deadlineHari = document.getElementById("cfgDeadlineHari").value;
+  const deadlineJam  = document.getElementById("cfgDeadlineJam").value || "23:59";
+  const btn  = document.getElementById("btnSimpanDeadline");
+  const okEl = document.getElementById("deadlineOk");
+  const errEl = document.getElementById("deadlineErr");
+
+  errEl.textContent = ""; btn.disabled = true; btn.innerHTML = '<span class="loading-spin"></span>Menyimpan...';
+
+  const cfg = { tanggal_mulai: tanggalMulai || "", deadline_hari: deadlineHari, deadline_jam: deadlineJam };
+  gasGet({action:"saveConfig", config:cfg}).then(res => {
+    btn.disabled = false; btn.innerHTML = "💾 Simpan Pengaturan Deadline";
+    if (res && res.status === "success") {
+      DST.config = {...DST.config, ...cfg};
+      okEl.style.color = "var(--a3)";
+      okEl.textContent = tanggalMulai
+        ? "✅ Deadline tersimpan! Mahasiswa wajib lapor/edit sebelum " + deadlineHari + " jam " + deadlineJam + " tiap minggu."
+        : "✅ Tersimpan! Tanggal mulai kosong = tidak ada batas deadline (bebas kapan saja).";
+    } else {
+      errEl.textContent = "Gagal menyimpan. Coba lagi.";
+    }
+    setTimeout(()=>okEl.textContent="", 5000);
+  }).catch(()=>{ btn.disabled=false; btn.innerHTML="💾 Simpan Pengaturan Deadline"; errEl.textContent="Gagal konek server."; });
 }
 
 // ── LOG AKSES ─────────────────────────────────────────────────

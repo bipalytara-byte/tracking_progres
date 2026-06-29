@@ -61,6 +61,7 @@ textarea.rpg-input{resize:vertical;margin-bottom:0}
 .role-chip{background:var(--parch);border:2px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;text-align:center;font-family:'Nunito',sans-serif;transition:border-color .15s}
 .role-chip:hover{border-color:var(--gold)}
 .role-chip.selected{background:#fdf2d8;border-color:var(--gold);color:#8a6010}
+.role-chip.taken{border-style:dashed}
 .log-box{background:var(--parch);border:2px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
 .locked-tag{display:inline-block;background:#fde8e7;color:#b03228;border:1.5px solid var(--a1);border-radius:6px;font-size:12px;font-weight:700;padding:3px 10px;margin-top:5px}
 .feedback-box{background:var(--feedback-bg);border:2px solid var(--feedback-border);border-radius:10px;padding:12px 14px;margin-top:10px}
@@ -209,14 +210,14 @@ const PARTIES = {
 const AVATAR_COLORS = ["#e8534a","#4a90d9","#52b788","#c9982a","#9b59b6"];
 const AVATAR_BG     = ["#fde8e7","#e3f0fc","#e3f5ec","#fdf2d8","#f0e8f8"];
 const ROLE_OPTIONS  = [
-  {icon:"🗺️", label:"Mapper / Level Designer"},
-  {icon:"📜", label:"Eventer / Story Writer"},
-  {icon:"💻", label:"Programmer / JS Scripter"},
-  {icon:"🎨", label:"Asset Creator / Pixel Artist"},
-  {icon:"🎵", label:"Sound Designer / Composer"},
-  {icon:"🖼️", label:"UI Designer"},
-  {icon:"🧪", label:"QA Tester / Bug Hunter"},
-  {icon:"📋", label:"Project Manager"}
+  {icon:"🗺️", label:"Mapper / Level Designer",     desc:"Membuat dan menata map/level game (tileset, parallax, area eksplorasi)."},
+  {icon:"📜", label:"Eventer / Story Writer",        desc:"Menulis cerita, dialog, dan menyusun event/quest di RPG Maker."},
+  {icon:"💻", label:"Programmer / JS Scripter",      desc:"Membuat plugin/script JavaScript custom, fix bug logika game."},
+  {icon:"🎨", label:"Asset Creator / Pixel Artist",  desc:"Membuat/mengedit sprite, tileset, artwork, dan aset visual lain."},
+  {icon:"🎵", label:"Sound Designer / Composer",     desc:"Membuat atau memilih musik, efek suara (SFX), dan audio game."},
+  {icon:"🖼️", label:"UI Designer",                  desc:"Mendesain tampilan menu, HUD, dan elemen antarmuka game."},
+  {icon:"🧪", label:"QA Tester / Bug Hunter",        desc:"Menguji game, mencatat dan melaporkan bug, memastikan kualitas."},
+  {icon:"📋", label:"Project Manager",               desc:"Mengatur jadwal tim, koordinasi tugas, dan progres keseluruhan proyek."}
 ];
 
 let ST = {
@@ -224,7 +225,10 @@ let ST = {
   members:[], logs:{}, feedbacks:{},
   gameInfo:null, activeMember:null,
   verifiedMembers:{},
-  jumlahMinggu:8, config:{}
+  jumlahMinggu:8, config:{},
+  tanggalMulai:"", deadlineHari:"Minggu", deadlineJam:"23:59",
+  roleLockEnabled:true, roleOptions:[], weekStatusCache:{},
+  roleRequests:[] // pengajuan second role milik kelompok ini (untuk cek status pending)
 };
 
 // ── GAS CALL ─────────────────────────────────────────────────
@@ -254,11 +258,25 @@ window.addEventListener("DOMContentLoaded", function(){
     if (res && res.result) {
       ST.jumlahMinggu = res.result.jumlahMinggu || 8;
       ST.config = res.result;
+      ST.tanggalMulai     = res.result.tanggalMulai || "";
+      ST.deadlineHari      = res.result.deadlineHari || "Minggu";
+      ST.deadlineJam       = res.result.deadlineJam  || "23:59";
+      ST.roleLockEnabled   = res.result.roleLockEnabled !== false;
       if (res.result.namaMatkul) {
         document.getElementById("subtitleMatkul").textContent = res.result.namaMatkul + (res.result.semester ? " — " + res.result.semester : "");
       }
     }
   }).catch(()=>{});
+
+  // Ambil daftar role baku + status role-lock dari server (kalau gagal, fallback ke ROLE_OPTIONS lokal)
+  gasGet({action:"getRoleOptions"}).then(res => {
+    if (res && res.result && res.result.roles && res.result.roles.length) {
+      ST.roleOptions = res.result.roles;
+      ST.roleLockEnabled = !!res.result.roleLockEnabled;
+    } else {
+      ST.roleOptions = ROLE_OPTIONS;
+    }
+  }).catch(() => { ST.roleOptions = ROLE_OPTIONS; });
 });
 
 // ── LOGIN ─────────────────────────────────────────────────────
@@ -383,6 +401,7 @@ function renderMemberGrid() {
       <div class="mc-nim">${m.nim||""}</div>
       <div class="mc-name">${m.nama} ${pinBadge}</div>
       <div class="mc-role" style="font-size:10px">${m.jobdesk||"— Pilih role"}</div>
+      ${m.roleKedua && m.roleKedua.length ? `<div style="font-size:9px;color:var(--a2);margin-top:1px">+ ${m.roleKedua.join(", ")}</div>` : ""}
       ${doneCount > 0 ? `<div style="margin-top:5px"><span class="chip chip-green" style="font-size:10px">✓ ${doneCount}/${totalW} Minggu</span></div>` : ""}
     </div>`;
   }).join("");
@@ -517,7 +536,8 @@ function renderMemberScreen(idx) {
     document.getElementById("mRole").textContent = "Role belum dipilih";
     renderRolePicker(idx);
   } else {
-    document.getElementById("mRole").textContent = m.jobdesk;
+    const roleKedua = (m.roleKedua && m.roleKedua.length) ? " + " + m.roleKedua.join(", ") : "";
+    document.getElementById("mRole").textContent = m.jobdesk + roleKedua;
     renderWeekTabs(idx);
   }
   show("s-member");
@@ -525,40 +545,111 @@ function renderMemberScreen(idx) {
 
 function goParty() { show("s-party"); }
 
+// Cari role yang sedang dipakai member lain (selain idx ini) di party yang sama
+function getTakenRoles(excludeIdx) {
+  const taken = {};
+  ST.members.forEach((mm, i) => {
+    if (i !== excludeIdx && mm.jobdesk) taken[mm.jobdesk] = mm.nama;
+  });
+  return taken;
+}
+
+function getRoleOptionsList() {
+  return (ST.roleOptions && ST.roleOptions.length) ? ST.roleOptions : ROLE_OPTIONS;
+}
+
 function renderRolePicker(idx) {
+  const opts  = getRoleOptionsList();
+  const taken = getTakenRoles(idx);
   document.getElementById("weekArea").innerHTML = `<div class="box">
-    <div class="rpg-h3" style="margin-bottom:12px">Pilih role kamu dalam tim</div>
-    <div class="role-grid">${ROLE_OPTIONS.map(r => `<div class="role-chip" data-role="${r.label}" onclick="selectRole(this)">${r.icon} ${r.label}</div>`).join("")}
-    <div class="role-chip" style="border-style:dashed;color:var(--ink3)" data-role="__other__" onclick="selectRole(this)">✏️ Lainnya...</div>
+    <div class="rpg-h3" style="margin-bottom:6px">Pilih role kamu dalam tim</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">
+      ${ST.roleLockEnabled ? "🔒 Role utama harus unik — tiap role hanya boleh dipakai 1 orang per kelompok." : "🔓 Role bebas dipilih siapa saja (mode bebas aktif)."}
     </div>
+    <div class="role-grid">${opts.map(r => {
+      const isTaken = ST.roleLockEnabled && taken[r.label];
+      return `<div class="role-chip ${isTaken?'taken':''}" data-role="${r.label}" data-desc="${(r.desc||'').replace(/"/g,'&quot;')}" onclick="selectRole(this)"
+        title="${(r.desc||'').replace(/"/g,'&quot;')}" style="${isTaken?'opacity:.55':''}">
+        ${r.icon} ${r.label}${isTaken?` <span style="font-size:10px;color:var(--a1)">(dipakai ${taken[r.label]})</span>`:""}
+      </div>`;
+    }).join("")}
+    <div class="role-chip" style="border-style:dashed;color:var(--ink3)" data-role="__other__" data-desc="" onclick="selectRole(this)">✏️ Lainnya...</div>
+    </div>
+    <div id="roleDescBox" style="display:none;margin:6px 0 10px;padding:8px 12px;background:var(--parch);border:1.5px solid var(--border);border-radius:8px;font-size:12px;color:var(--ink2)"></div>
     <div id="customWrap" style="display:none;margin-bottom:10px">
       <label class="form-lbl">Tuliskan role kamu</label>
       <input class="rpg-input" id="customRoleInput" placeholder="Contoh: Music Composer" maxlength="50">
     </div>
-    <button class="btn btn-gold" onclick="confirmRole(${idx})">✅ Konfirmasi Role</button>
+    <div id="takenNotice" style="display:none;margin-bottom:10px;font-size:12px;color:var(--a1);background:#fde8e7;border:1.5px solid var(--a1);border-radius:8px;padding:8px 12px">
+      ⚠️ Role ini sudah jadi role utama anggota lain. Kamu tetap bisa <b>mengajukan</b> role ini sebagai <b>second role</b> — perlu di-ACC dosen dulu sebelum aktif.
+    </div>
+    <button class="btn btn-gold" id="btnConfirmRole" onclick="confirmRole(${idx})">✅ Konfirmasi Role</button>
     <div class="err" id="roleErr"></div>
+    <div class="ok" id="roleOk"></div>
   </div>`;
 }
 
 function selectRole(chip) {
   document.querySelectorAll(".role-chip").forEach(c => c.classList.remove("selected"));
   chip.classList.add("selected");
-  const cw = document.getElementById("customWrap");
-  if (chip.dataset.role === "__other__") { cw.style.display = "block"; document.getElementById("customRoleInput").focus(); }
-  else cw.style.display = "none";
+  const cw   = document.getElementById("customWrap");
+  const desc = document.getElementById("roleDescBox");
+  const notice = document.getElementById("takenNotice");
+  const btn  = document.getElementById("btnConfirmRole");
+  const isOther = chip.dataset.role === "__other__";
+  const isTaken = chip.classList.contains("taken");
+
+  cw.style.display = isOther ? "block" : "none";
+  if (isOther) document.getElementById("customRoleInput").focus();
+
+  if (chip.dataset.desc) {
+    desc.style.display = "block";
+    desc.innerHTML = `<b>${chip.dataset.role}:</b> ${chip.dataset.desc}`;
+  } else {
+    desc.style.display = "none";
+  }
+
+  notice.style.display = isTaken ? "block" : "none";
+  btn.textContent = isTaken ? "📩 Ajukan sebagai Second Role" : "✅ Konfirmasi Role";
 }
 
 function confirmRole(idx) {
   const sel   = document.querySelector(".role-chip.selected");
   const errEl = document.getElementById("roleErr");
+  const okEl  = document.getElementById("roleOk");
+  errEl.textContent = ""; okEl.textContent = "";
   if (!sel) { errEl.textContent = "Pilih salah satu role!"; return; }
+
   let role = sel.dataset.role;
   if (role === "__other__") { role = (document.getElementById("customRoleInput").value||"").trim(); if (!role) { errEl.textContent = "Isi role kamu!"; return; } }
-  errEl.textContent = "";
+
+  const m       = ST.members[idx];
+  const isTaken = ST.roleLockEnabled && sel.classList.contains("taken");
+
+  if (isTaken) {
+    // Role utama sudah dipakai orang lain → ajukan sebagai SECOND ROLE (perlu ACC dosen), bukan langsung set jobdesk
+    gasPost({action:"requestSecondRole", payload:{kelompok:ST.party.guild, nim:m.nim, nama:m.nama, roleDiajukan:role}}).then(res => {
+      if (res && res.status === "error") {
+        errEl.textContent = res.message || "Gagal mengirim pengajuan.";
+      } else {
+        okEl.style.color = "var(--a3)";
+        okEl.textContent = "✅ Pengajuan second role '" + role + "' terkirim! Menunggu ACC dosen.";
+      }
+    }).catch(() => { errEl.textContent = "Gagal kirim. Cek koneksi internet."; });
+    return;
+  }
+
+  // Role belum dipakai (atau role-lock dimatikan) → langsung set sebagai role utama
   ST.members[idx].jobdesk = role;
-  gasPost({action:"saveMembers", kelompok:ST.party.guild, members:ST.members});
-  document.getElementById("mRole").textContent = role;
-  renderMemberGrid(); renderWeekTabs(idx);
+  gasPost({action:"saveMembers", kelompok:ST.party.guild, members:ST.members}).then(res => {
+    if (res && res.status === "error") {
+      errEl.textContent = res.message || "Gagal menyimpan role.";
+      ST.members[idx].jobdesk = ""; // rollback state lokal kalau backend tolak (misal race condition unik)
+    } else {
+      document.getElementById("mRole").textContent = role;
+      renderMemberGrid(); renderWeekTabs(idx);
+    }
+  });
 }
 
 // ── WEEK TABS ─────────────────────────────────────────────────
@@ -599,45 +690,83 @@ function selectWeek(week, idx, btn) {
     </div>`;
   }
 
-  if (log) {
-    const pct = parseInt(String(log.progres||"0").replace("%","")) || 0;
-    const bc  = pct>=75 ? "var(--a3)" : pct>=40 ? "var(--a4)" : "var(--a1)";
-    area.innerHTML = `<div class="rpg-h3" style="margin-bottom:10px">Laporan ${week}</div>
-      <div class="log-box">
-        <div style="color:var(--gold);font-size:13px;font-weight:700;font-family:'Cinzel',serif;margin-bottom:5px">${week}</div>
-        <div style="display:flex;align-items:center;gap:12px;margin:8px 0">
-          <div style="flex:1"><div class="pbar-wrap"><div class="pbar-fill" style="width:${pct}%;background:${bc}"></div></div></div>
-          <span style="font-size:15px;font-weight:800;color:${bc}">${pct}%</span>
+  area.innerHTML = `<div class="rpg-h3" style="margin-bottom:12px">Memeriksa status ${week}...</div>`;
+
+  // Cek dulu apakah minggu ini masih boleh diisi/edit (belum lewat deadline)
+  const cacheKey = week;
+  const useCache = ST.weekStatusCache[cacheKey];
+  const statusPromise = useCache ? Promise.resolve(useCache) : gasGet({action:"checkWeekStatus", minggu:week});
+
+  statusPromise.then(res => {
+    const status = (res && res.result) ? res.result : { editable:true, deadline:null };
+    ST.weekStatusCache[cacheKey] = status;
+    renderWeekForm(status);
+  }).catch(() => renderWeekForm({editable:true, deadline:null}));
+
+  function renderWeekForm(status) {
+    const deadlineInfo = status.deadline
+      ? `<div style="font-size:11px;color:var(--ink3);margin-top:4px">⏰ Deadline ${week}: <b>${status.deadline}</b></div>`
+      : "";
+
+    if (log && !status.editable) {
+      // Sudah lapor DAN sudah lewat deadline → terkunci permanen
+      const pct = parseInt(String(log.progres||"0").replace("%","")) || 0;
+      const bc  = pct>=75 ? "var(--a3)" : pct>=40 ? "var(--a4)" : "var(--a1)";
+      area.innerHTML = `<div class="rpg-h3" style="margin-bottom:10px">Laporan ${week}</div>
+        <div class="log-box">
+          <div style="color:var(--gold);font-size:13px;font-weight:700;font-family:'Cinzel',serif;margin-bottom:5px">${week}</div>
+          <div style="display:flex;align-items:center;gap:12px;margin:8px 0">
+            <div style="flex:1"><div class="pbar-wrap"><div class="pbar-fill" style="width:${pct}%;background:${bc}"></div></div></div>
+            <span style="font-size:15px;font-weight:800;color:${bc}">${pct}%</span>
+          </div>
+          <div style="font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:5px">${log.detail||"—"}</div>
+          <div class="locked-tag">🔒 Laporan terkunci — batas waktu edit sudah lewat</div>
+          ${deadlineInfo}
+          <div id="feedbackArea">${renderFeedbackBox(cachedFeedback)}</div>
+        </div>`;
+    } else if (!status.editable) {
+      // Belum lapor sama sekali DAN sudah lewat deadline → tidak bisa isi lagi
+      area.innerHTML = `<div class="rpg-h3" style="margin-bottom:12px">${week}</div>
+        <div class="log-box">
+          <div class="locked-tag">🔒 Batas waktu laporan ${week} sudah lewat. Kamu tidak mengisi laporan minggu ini.</div>
+          ${deadlineInfo}
+        </div>`;
+    } else {
+      // Masih bisa diisi/edit (baik laporan baru maupun edit ulang sebelum deadline)
+      const isEdit  = !!log;
+      const prePct  = isEdit ? (parseInt(String(log.progres||"0").replace("%",""))||0) : 0;
+      const preDetail = isEdit ? (log.detail||"") : "";
+      area.innerHTML = `<div class="rpg-h3" style="margin-bottom:6px">${isEdit ? "✏️ Edit Laporan " : "Isi Laporan "}${week}</div>
+        ${isEdit ? `<div style="font-size:11px;color:var(--a4);margin-bottom:10px">Kamu masih bisa mengubah laporan ini sampai deadline.</div>` : ""}
+        ${deadlineInfo}
+        <div class="form-field" style="margin-top:10px">
+          <label class="form-lbl">Progres Penyelesaian (%)</label>
+          <input class="rpg-input" type="number" id="inpPct" min="0" max="100" value="${prePct||""}" placeholder="0 – 100" oninput="updBar(this.value,'${clr}')">
+          <div class="pbar-wrap"><div class="pbar-fill" id="progBar" style="width:${prePct}%;background:${clr}"></div></div>
         </div>
-        <div style="font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:5px">${log.detail||"—"}</div>
-        <div class="locked-tag">🔒 Laporan terkunci</div>
-        <div id="feedbackArea">${renderFeedbackBox(cachedFeedback)}</div>
-      </div>`;
-    // Load feedback dari GAS di background
-    gasGet({action:"getFeedback", kelompok:ST.party.guild, minggu:week}).then(res => {
-      if (res && res.result) {
-        const fb = res.result.find(f => f.nim===m.nim || f.nama===m.nama);
-        if (fb) {
-          ST.feedbacks[fbKey] = fb;
-          const el = document.getElementById("feedbackArea");
-          if (el) el.innerHTML = renderFeedbackBox(fb);
+        <div class="form-field">
+          <label class="form-lbl">Detail Pekerjaan Minggu Ini</label>
+          <textarea class="rpg-input" id="inpDetail" rows="4" placeholder="Tuliskan apa yang kamu kerjakan minggu ini...">${preDetail}</textarea>
+        </div>
+        <button class="btn btn-sky" id="btnSubmit" onclick="submitLog('${week}',${idx})">${isEdit ? "💾 Simpan Perubahan" : "📤 Kirim Laporan Quest"}</button>
+        <div class="err" id="subErr"></div>
+        <div class="ok" id="subOk"></div>
+        ${isEdit ? `<div id="feedbackArea" style="margin-top:10px">${renderFeedbackBox(cachedFeedback)}</div>` : ""}`;
+    }
+
+    // Load feedback dari GAS di background (untuk kedua kasus yang punya log)
+    if (log) {
+      gasGet({action:"getFeedback", kelompok:ST.party.guild, minggu:week}).then(res => {
+        if (res && res.result) {
+          const fb = res.result.find(f => f.nim===m.nim || f.nama===m.nama);
+          if (fb) {
+            ST.feedbacks[fbKey] = fb;
+            const el = document.getElementById("feedbackArea");
+            if (el) el.innerHTML = renderFeedbackBox(fb);
+          }
         }
-      }
-    }).catch(()=>{});
-  } else {
-    area.innerHTML = `<div class="rpg-h3" style="margin-bottom:12px">Isi Laporan ${week}</div>
-      <div class="form-field">
-        <label class="form-lbl">Progres Penyelesaian (%)</label>
-        <input class="rpg-input" type="number" id="inpPct" min="0" max="100" placeholder="0 – 100" oninput="updBar(this.value,'${clr}')">
-        <div class="pbar-wrap"><div class="pbar-fill" id="progBar" style="width:0%;background:${clr}"></div></div>
-      </div>
-      <div class="form-field">
-        <label class="form-lbl">Detail Pekerjaan Minggu Ini</label>
-        <textarea class="rpg-input" id="inpDetail" rows="4" placeholder="Tuliskan apa yang kamu kerjakan minggu ini..."></textarea>
-      </div>
-      <button class="btn btn-sky" id="btnSubmit" onclick="submitLog('${week}',${idx})">📤 Kirim Laporan Quest</button>
-      <div class="err" id="subErr"></div>
-      <div class="ok" id="subOk"></div>`;
+      }).catch(()=>{});
+    }
   }
 }
 
@@ -652,6 +781,7 @@ function submitLog(week, idx) {
   const errEl  = document.getElementById("subErr");
   const okEl   = document.getElementById("subOk");
   const btn    = document.getElementById("btnSubmit");
+  const wasEdit = btn.textContent.indexOf("Simpan Perubahan") !== -1;
   if (!pct) { errEl.textContent = "Isi persentase progres!"; return; }
   if (!detail) { errEl.textContent = "Isi detail pekerjaan!"; return; }
   errEl.textContent = "";
@@ -670,12 +800,14 @@ function submitLog(week, idx) {
     if (res && res.status === "error") {
       errEl.textContent = res.message || "Gagal menyimpan.";
       okEl.textContent  = "";
+      btn.disabled = false;
+      btn.innerHTML = wasEdit ? "💾 Simpan Perubahan" : "📤 Kirim Laporan Quest";
     } else {
       // Simpan ke state lokal
       if (!ST.logs[memberKey]) ST.logs[memberKey] = {};
       ST.logs[memberKey][week] = {progres:pct, detail, minggu:week, nim:m.nim, nama:m.nama, role:m.jobdesk};
       okEl.style.color  = "var(--a3)";
-      okEl.textContent  = "✅ Laporan Quest berhasil dikirim!";
+      okEl.textContent  = wasEdit ? "✅ Perubahan tersimpan!" : "✅ Laporan Quest berhasil dikirim!";
       renderMemberGrid();
       renderWeekTabs(idx);
       setTimeout(() => {
@@ -684,11 +816,11 @@ function submitLog(week, idx) {
       }, 100);
     }
     btn.disabled = false;
-    btn.innerHTML = "📤 Kirim Laporan Quest";
+    btn.innerHTML = wasEdit ? "💾 Simpan Perubahan" : "📤 Kirim Laporan Quest";
   }).catch(() => {
     errEl.textContent = "Gagal kirim. Cek koneksi internet.";
     btn.disabled = false;
-    btn.innerHTML = "📤 Kirim Laporan Quest";
+    btn.innerHTML = wasEdit ? "💾 Simpan Perubahan" : "📤 Kirim Laporan Quest";
   });
 }
 </script>
