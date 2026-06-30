@@ -98,6 +98,7 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
         <button class="nav-tab" onclick="setTab('rolereq',this)">🎭 Pengajuan Role <span id="roleReqBadge" style="display:none;background:var(--a1);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:3px">0</span></button>
         <button class="nav-tab" onclick="setTab('feedback',this)">💬 Feedback</button>
         <button class="nav-tab" onclick="setTab('logakses',this)">🔍 Log Akses</button>
+        <button class="nav-tab" onclick="setTab('pinview',this)">🔑 Lihat PIN</button>
         <button class="nav-tab" onclick="setTab('config',this)">⚙️ Konfigurasi</button>
         <a href="leaderboard.html" target="_blank" class="nav-tab" style="text-decoration:none">🏆 Leaderboard</a>
       </div>
@@ -208,6 +209,17 @@ body{background:var(--parch);color:var(--ink);font-family:'Nunito',sans-serif;mi
       </div>
       <div id="logAksesArea">
         <div style="text-align:center;padding:2rem;color:var(--ink3)">Klik Refresh untuk memuat log.</div>
+      </div>
+    </div>
+
+    <!-- LIHAT PIN -->
+    <div id="tab-pinview" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <div class="rpg-h3" style="margin-bottom:0">PIN mahasiswa (diatur mandiri oleh mereka)</div>
+        <button class="btn btn-sec btn-sm" onclick="loadPinView()">↻ Refresh</button>
+      </div>
+      <div id="pinViewArea">
+        <div style="text-align:center;padding:2rem;color:var(--ink3)">Memuat...</div>
       </div>
     </div>
 
@@ -373,6 +385,7 @@ function dosenLogin() {
     btn.disabled = false; btn.innerHTML = "▶ Masuk Panel Dosen";
     if (res && res.result === true) {
       errEl.textContent = "";
+      DST.kode = kode;
       loadDashboard();
     } else {
       errEl.textContent = "Kode dosen tidak valid.";
@@ -525,7 +538,7 @@ function _loadDataAfterConfig() {
 function setTab(tab, btn) {
   document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  ["overview","anggota","progres","rolereq","feedback","logakses","config"].forEach(t => {
+  ["overview","anggota","progres","rolereq","feedback","logakses","pinview","config"].forEach(t => {
     document.getElementById("tab-"+t).style.display = t === tab ? "block" : "none";
   });
   if (tab === "anggota")  loadAndRenderAnggota();
@@ -533,7 +546,43 @@ function setTab(tab, btn) {
   if (tab === "rolereq")  loadRoleRequests();
   if (tab === "feedback") { buildFbMingguSel(); renderFeedbackTab(); }
   if (tab === "logakses") loadLogAkses();
+  if (tab === "pinview")  loadPinView();
   if (tab === "config")   { renderConfigTab(); updateRoleLockUI(); updateRoleChangeUI(); }
+}
+
+// ── LIHAT PIN (KHUSUS DOSEN) ────────────────────────────────────
+function loadPinView() {
+  const area = document.getElementById("pinViewArea");
+  area.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--ink3)"><span class="loading-spin"></span> Memuat data PIN...</div>`;
+  gasGet({action:"getMembersWithPin", kode:DST.kode}).then(res => {
+    if (!res || res.status !== "success") {
+      area.innerHTML = `<div class="box" style="color:var(--a1)">⚠️ ${(res && res.message) || "Gagal memuat data PIN."}</div>`;
+      return;
+    }
+    const rows = res.result || [];
+    const byKelompok = {};
+    rows.forEach(r => { (byKelompok[r.kelompok] = byKelompok[r.kelompok] || []).push(r); });
+    const groups = Object.keys(byKelompok).sort();
+    if (!groups.length) { area.innerHTML = `<div class="box">Belum ada data anggota.</div>`; return; }
+    area.innerHTML = `<div class="box" style="margin-bottom:10px;font-size:11px;color:var(--ink3)">
+      🔒 Halaman ini hanya bisa diakses dengan kode dosen yang valid. PIN ditampilkan apa adanya — jangan bagikan tangkapan layar halaman ini ke pihak lain.
+    </div>` + groups.map(g => `
+      <div class="box" style="margin-bottom:10px">
+        <div style="font-weight:bold;color:var(--gold);margin-bottom:8px">${g}</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <tr style="text-align:left;color:var(--ink3)"><th>Nama</th><th>NIM</th><th>Jobdesk</th><th>PIN</th></tr>
+          ${byKelompok[g].filter(m=>m.nama).map(m => `
+            <tr style="border-top:1px solid var(--border)">
+              <td style="padding:5px 4px">${m.nama}</td>
+              <td style="padding:5px 4px">${m.nim||"—"}</td>
+              <td style="padding:5px 4px">${m.jobdesk||"—"}</td>
+              <td style="padding:5px 4px;font-family:monospace">${m.pin ? m.pin : '<span style="color:var(--ink3)">— belum diset —</span>'}</td>
+            </tr>`).join("")}
+        </table>
+      </div>`).join("");
+  }).catch(() => {
+    area.innerHTML = `<div class="box" style="color:var(--a1)">Gagal konek ke server.</div>`;
+  });
 }
 
 // ── OVERVIEW ─────────────────────────────────────────────────
@@ -624,13 +673,14 @@ function renderAnggotaForm() {
           <option value="TI B" ${m.kelas==="TI B"?"selected":""}>TI B</option>
         </select>
         <input class="m-inp" placeholder="Jobdesk (opsional)" value="${m.jobdesk||""}" oninput="DST.allMembers['${kelompok}'][${i}].jobdesk=this.value">
-        <input class="m-inp" type="password" placeholder="PIN" maxlength="12" value="${m.pin||""}"
-          title="PIN login pribadi mahasiswa ini"
+        <input class="m-inp" type="password" placeholder="${m.hasPin ? '🔒 Sudah diset (ketik utk ganti)' : 'PIN'}" maxlength="12" value="${m.pin||""}"
+          title="${m.hasPin ? 'PIN sudah tersimpan di server dan TIDAK ditampilkan demi keamanan. Biarkan kosong untuk mempertahankan PIN lama — isi hanya kalau mau menggantinya.' : 'PIN login pribadi mahasiswa ini'}"
           oninput="DST.allMembers['${kelompok}'][${i}].pin=this.value"
           style="font-family:monospace">
         <button class="btn-del" onclick="removeRow('${kelompok}',${i})">✕</button>
       </div>
       ${m.roleKedua && m.roleKedua.length ? `<div style="margin-left:31px;margin-top:3px;font-size:11px;color:var(--a2)">🎭 Second role (sudah di-ACC): <b>${m.roleKedua.join(", ")}</b></div>` : ""}
+      ${m.hasPin ? `<div style="margin-left:31px;margin-top:3px"><a href="#" style="font-size:11px;color:var(--a1)" onclick="event.preventDefault();resetMemberPin('${kelompok}',${i})">🔓 Reset PIN (kalau mahasiswa lupa)</a></div>` : ""}
       </div>`).join("")}
     </div>
     <button onclick="addRow('${kelompok}')" style="background:transparent;color:var(--gold);border:1px dashed var(--border2);border-radius:6px;padding:7px 14px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif;width:100%;margin-top:4px">
@@ -639,7 +689,7 @@ function renderAnggotaForm() {
     <div style="margin-top:10px;background:var(--parch3);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--ink3)">
       <b>ℹ️ Tentang PIN:</b> PIN adalah password pribadi setiap mahasiswa untuk mengakses laporan mereka.
       Kosongkan jika tidak ingin menggunakan PIN (semua bisa akses tanpa verifikasi).
-      PIN yang sudah diset akan ditampilkan sebagai 🔒 di kartu anggota.
+      Field PIN yang sudah diset akan tampil <b>kosong</b> di sini (demi keamanan, server tidak pernah mengirim PIN asli) — itu normal, <b>biarkan kosong</b> dan PIN lama tetap aman tersimpan. Isi field hanya kalau memang ingin mengganti PIN mahasiswa tsb.
     </div>
   </div>`;
 }
@@ -647,6 +697,18 @@ function renderAnggotaForm() {
 function addRow(kelompok) {
   DST.allMembers[kelompok].push({nim:"",nama:"",kelas:"TI A",jobdesk:"",pin:""});
   renderAnggotaForm();
+}
+function resetMemberPin(kelompok, idx) {
+  const m = DST.allMembers[kelompok][idx];
+  if (!confirm(`Reset PIN untuk ${m.nama || "anggota ini"}? Mahasiswa harus atur PIN baru sendiri lewat portal.`)) return;
+  gasGet({action:"setPinSelf", kelompok, nim:m.nim||"", nama:m.nama||"", pin:""}).then(res => {
+    if (res && res.status === "success") {
+      m.hasPin = false; m.pin = "";
+      renderAnggotaForm();
+    } else {
+      alert((res && res.message) || "Gagal reset PIN.");
+    }
+  }).catch(() => alert("Gagal konek ke server."));
 }
 function removeRow(kelompok, idx) {
   if (DST.allMembers[kelompok].length <= 1) return;

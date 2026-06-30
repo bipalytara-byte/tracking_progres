@@ -186,7 +186,9 @@ textarea.rpg-input{resize:vertical;margin-bottom:0}
         </div>
       </div>
     </div>
-    <div id="roleChangeArea" style="margin-bottom:1rem"></div>
+    <div id="roleChangeArea" style="margin-bottom:.5rem"></div>
+    <div id="pinManageArea" style="margin-bottom:1rem"></div>
+    <div id="pinSetterBox" style="display:none;margin-bottom:1rem"></div>
     <div class="rpg-h3" style="margin-bottom:8px">Pilih Minggu</div>
     <div class="week-tabs" id="weekTabs"></div>
     <div id="weekArea"></div>
@@ -535,6 +537,7 @@ function renderMemberScreen(idx) {
   document.getElementById("mNIM").textContent   = m.nim||"—";
   document.getElementById("mKelas").textContent = m.kelas||"";
   const roleChangeArea = document.getElementById("roleChangeArea");
+  renderPinManageArea(idx);
 
   if (!m.jobdesk) {
     document.getElementById("mRole").textContent = "Role belum dipilih";
@@ -553,6 +556,80 @@ function renderMemberScreen(idx) {
 }
 
 function goParty() { show("s-party"); }
+
+// ── ATUR PIN SENDIRI (tanpa lewat dosen) ────────────────────────
+function renderPinManageArea(idx) {
+  const m = ST.members[idx];
+  const area = document.getElementById("pinManageArea");
+  area.innerHTML = `<button class="btn btn-ghost" style="width:auto;padding:6px 12px;font-size:12px" onclick="openPinSetter(${idx})">
+    ${m.hasPin ? "🔑 Ganti PIN saya" : "🔑 Atur PIN saya"}
+  </button>`;
+}
+
+function openPinSetter(idx) {
+  const m   = ST.members[idx];
+  const box = document.getElementById("pinSetterBox");
+  box.style.display = "block";
+  box.innerHTML = `<div class="box">
+    <div class="rpg-h3" style="margin-bottom:4px">${m.hasPin ? "Ganti PIN kamu" : "Atur PIN kamu"}</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">
+      PIN dipakai untuk melindungi laporanmu dari diubah orang lain. Hanya kamu yang tahu PIN ini — dosen tidak bisa melihatnya.
+      Isi 4-12 karakter (angka/huruf bebas). Kosongkan lalu simpan kalau ingin menonaktifkan PIN.
+    </div>
+    <input class="rpg-input" type="password" id="newPinInput" placeholder="PIN baru (4-12 karakter)" maxlength="12" inputmode="numeric" autocomplete="off">
+    <input class="rpg-input" type="password" id="newPinConfirm" placeholder="Ulangi PIN baru" maxlength="12" inputmode="numeric" autocomplete="off" style="margin-top:8px">
+    <button class="btn btn-gold" id="btnSavePin" onclick="savePinSelf(${idx})" style="margin-top:10px">💾 Simpan PIN</button>
+    <button class="btn btn-ghost" onclick="closePinSetter()">Batal</button>
+    <div class="err" id="pinSetErr"></div>
+    <div class="ok" id="pinSetOk"></div>
+  </div>`;
+  setTimeout(() => document.getElementById("newPinInput").focus(), 100);
+}
+
+function closePinSetter() {
+  document.getElementById("pinSetterBox").style.display = "none";
+}
+
+function savePinSelf(idx) {
+  const m       = ST.members[idx];
+  const pin1    = document.getElementById("newPinInput").value.trim();
+  const pin2    = document.getElementById("newPinConfirm").value.trim();
+  const errEl   = document.getElementById("pinSetErr");
+  const okEl    = document.getElementById("pinSetOk");
+  const btn     = document.getElementById("btnSavePin");
+  errEl.textContent = ""; okEl.textContent = "";
+
+  if (pin1 && (pin1.length < 4 || pin1.length > 12)) { errEl.textContent = "PIN harus 4-12 karakter."; return; }
+  if (pin1 !== pin2) { errEl.textContent = "PIN dan konfirmasi tidak sama."; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spin"></span>Menyimpan...';
+
+  gasGet({
+    action: "setPinSelf",
+    kelompok: ST.party.guild,
+    nim:  m.nim || "",
+    nama: m.nama,
+    pin:  pin1
+  }).then(res => {
+    btn.disabled = false;
+    btn.innerHTML = "💾 Simpan PIN";
+    if (res && res.status === "success") {
+      ST.members[idx].hasPin = !!pin1;
+      ST.verifiedMembers[idx] = true; // PIN baru, tidak perlu re-verify di sesi ini
+      okEl.style.color = "var(--a3)";
+      okEl.textContent = pin1 ? "✅ PIN berhasil disimpan!" : "✅ PIN dinonaktifkan.";
+      renderPinManageArea(idx);
+      setTimeout(closePinSetter, 900);
+    } else {
+      errEl.textContent = (res && res.message) ? res.message : "Gagal menyimpan PIN.";
+    }
+  }).catch(() => {
+    btn.disabled = false;
+    btn.innerHTML = "💾 Simpan PIN";
+    errEl.textContent = "Gagal konek ke server.";
+  });
+}
 
 // Cari role yang sedang dipakai member lain (selain idx ini) di party yang sama
 function getTakenRoles(excludeIdx) {
